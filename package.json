@@ -1,0 +1,38 @@
+{
+  "name": "akhi-car-rental",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Akhi Car Rental Solution - Next.js + Payload CMS + Postgres",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "generate:importmap": "payload generate:importmap",
+    "generate:types": "payload generate:types",
+    "seed": "tsx scripts/seed.ts",
+    "payload": "payload"
+  },
+  "dependencies": {
+    "@payloadcms/db-vercel-postgres": "3.93.0",
+    "@payloadcms/next": "3.93.0",
+    "@payloadcms/richtext-lexical": "3.93.0",
+    "@payloadcms/storage-vercel-blob": "3.93.0",
+    "graphql": "^16.8.1",
+    "next": "16.4.5",
+    "payload": "3.93.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": { "node": ">=20.9" }
+}
