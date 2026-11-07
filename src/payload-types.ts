@@ -69,6 +69,7 @@ export interface Config {
   collections: {
     cars: Car;
     services: Service;
+    facilities: Facility;
     testimonials: Testimonial;
     inquiries: Inquiry;
     media: Media;
@@ -82,6 +83,7 @@ export interface Config {
   collectionsSelect: {
     cars: CarsSelect<false> | CarsSelect<true>;
     services: ServicesSelect<false> | ServicesSelect<true>;
+    facilities: FacilitiesSelect<false> | FacilitiesSelect<true>;
     testimonials: TestimonialsSelect<false> | TestimonialsSelect<true>;
     inquiries: InquiriesSelect<false> | InquiriesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -264,6 +266,23 @@ export interface Service {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "facilities".
+ */
+export interface Facility {
+  id: number;
+  title: string;
+  /**
+   * An emoji shown on the card
+   */
+  icon?: string | null;
+  text?: string | null;
+  accent?: ('violet' | 'pink' | 'amber' | 'cyan' | 'lime' | 'orange') | null;
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "testimonials".
  */
 export interface Testimonial {
@@ -358,6 +377,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'services';
         value: number | Service;
+      } | null)
+    | ({
+        relationTo: 'facilities';
+        value: number | Facility;
       } | null)
     | ({
         relationTo: 'testimonials';
@@ -477,6 +500,19 @@ export interface ServicesSelect<T extends boolean = true> {
         id?: T;
       };
   image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "facilities_select".
+ */
+export interface FacilitiesSelect<T extends boolean = true> {
+  title?: T;
+  icon?: T;
+  text?: T;
+  accent?: T;
+  order?: T;
   updatedAt?: T;
   createdAt?: T;
 }

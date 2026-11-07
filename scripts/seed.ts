@@ -224,6 +224,21 @@ const run = async () => {
   }
   await payload.updateGlobal({ slug: 'home', locale: 'bn', data: bn as any })
 
+  const facilities: { icon: string; accent: string; title: L; text: L }[] = [
+    { icon: '👨‍✈️', accent: 'violet', title: { en: 'Professional drivers', bn: 'পেশাদার ড্রাইভার' }, text: { en: 'Verified, trained and uniformed chauffeurs.', bn: 'যাচাইকৃত, প্রশিক্ষিত ও ইউনিফর্মধারী ড্রাইভার।' } },
+    { icon: '🕒', accent: 'pink', title: { en: '24/7 support', bn: '২৪/৭ সাপোর্ট' }, text: { en: 'Real people on call and WhatsApp, day and night.', bn: 'দিনরাত ফোন ও হোয়াটসঅ্যাপে সত্যিকারের মানুষ।' } },
+    { icon: '🛰️', accent: 'cyan', title: { en: 'GPS tracking', bn: 'জিপিএস ট্র্যাকিং' }, text: { en: 'Live-tracked vehicles for safety and transparency.', bn: 'নিরাপত্তা ও স্বচ্ছতার জন্য লাইভ ট্র্যাকড গাড়ি।' } },
+    { icon: '🔁', accent: 'amber', title: { en: 'Backup car', bn: 'ব্যাকআপ গাড়ি' }, text: { en: 'A replacement car whenever yours is in service.', bn: 'সার্ভিসিংয়ের সময় বিকল্প গাড়ি।' } },
+    { icon: '🧼', accent: 'lime', title: { en: 'Sanitised & clean', bn: 'পরিষ্কার ও স্যানিটাইজড' }, text: { en: 'Every car cleaned and sanitised before each trip.', bn: 'প্রতিটি ট্রিপের আগে গাড়ি পরিষ্কার ও স্যানিটাইজ করা হয়।' } },
+    { icon: '📶', accent: 'orange', title: { en: 'Wi-Fi & water onboard', bn: 'ওয়াই-ফাই ও পানি' }, text: { en: 'Stay connected and refreshed on the road.', bn: 'পথে থাকুন সংযুক্ত ও সতেজ।' } },
+    { icon: '🧾', accent: 'violet', title: { en: 'Corporate invoicing', bn: 'কর্পোরেট ইনভয়েস' }, text: { en: 'Monthly consolidated, VAT-ready invoices.', bn: 'মাসিক একত্রিত, ভ্যাট-রেডি ইনভয়েস।' } },
+    { icon: '🛡️', accent: 'pink', title: { en: 'Insured vehicles', bn: 'বিমাকৃত গাড়ি' }, text: { en: 'Fully insured and documented fleet.', bn: 'পূর্ণ বিমা ও কাগজপত্রসহ ফ্লিট।' } },
+  ]
+  for (const [i, f] of facilities.entries()) {
+    const d = await payload.create({ collection: 'facilities', locale: 'en', data: { icon: f.icon, accent: f.accent as any, order: i + 1, title: f.title.en, text: f.text.en } })
+    await payload.update({ collection: 'facilities', id: d.id, locale: 'bn', data: { title: f.title.bn, text: f.text.bn } })
+  }
+
   const reviews = [
     { name: 'Rafiq Ahmed', role: { en: 'CEO, Nexa Tech', bn: 'সিইও, নেক্সা টেক' }, quote: { en: 'Our monthly contract has been flawless — the driver is punctual and the backup car shows up the same day.', bn: 'আমাদের মান্থলি চুক্তি নিখুঁত — ড্রাইভার সময়ানুবর্তী আর ব্যাকআপ গাড়ি একই দিনে আসে।' } },
     { name: 'Nusrat Jahan', role: { en: 'Family trip to Cox\'s Bazar', bn: 'কক্সবাজার ফ্যামিলি ট্রিপ' }, quote: { en: 'Clean Noah, careful driver and the kids loved it. Booked everything on WhatsApp in minutes.', bn: 'পরিষ্কার নোয়া, সতর্ক ড্রাইভার, বাচ্চারা খুব উপভোগ করেছে। হোয়াটসঅ্যাপেই মিনিটে বুকিং।' } },

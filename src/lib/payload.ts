@@ -83,6 +83,12 @@ export const getCar = (locale: Locale, slug: string) =>
     null,
   )
 
+export const getFacilities = (locale: Locale) =>
+  safe(
+    async () => (await (await getClient()).find({ collection: 'facilities', locale, limit: 50, sort: 'order' })).docs,
+    [],
+  )
+
 export const getTestimonials = (locale: Locale) =>
   safe(async () => (await (await getClient()).find({ collection: 'testimonials', locale, limit: 12 })).docs, [])
 

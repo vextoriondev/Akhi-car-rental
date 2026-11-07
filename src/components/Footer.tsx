@@ -19,6 +19,7 @@ export function Footer({ locale, tr, s }: { locale: Locale; tr: T; s: any }) {
         <div className="foot-links">
           <Link href={`/${locale}/fleet`}>{tr('nav_fleet')}</Link>
           <Link href={`/${locale}/services`}>{tr('nav_services')}</Link>
+          <Link href={`/${locale}/facilities`}>{tr('nav_facilities')}</Link>
           <Link href={`/${locale}/contact`}>{tr('nav_contact')}</Link>
           {s?.facebook && <a href={s.facebook} target="_blank" rel="noreferrer">Facebook</a>}
           {s?.instagram && <a href={s.instagram} target="_blank" rel="noreferrer">Instagram</a>}

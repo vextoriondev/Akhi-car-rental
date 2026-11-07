@@ -10,6 +10,7 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Cars } from './collections/Cars'
 import { Services } from './collections/Services'
+import { Facilities } from './collections/Facilities'
 import { Testimonials } from './collections/Testimonials'
 import { Inquiries } from './collections/Inquiries'
 import { SiteSettings } from './globals/SiteSettings'
@@ -25,7 +26,7 @@ export default buildConfig({
     importMap: { baseDir: path.resolve(dirname) },
     meta: { titleSuffix: ' — Akhi Rental Admin' },
   },
-  collections: [Cars, Services, Testimonials, Inquiries, Media, Users],
+  collections: [Cars, Services, Facilities, Testimonials, Inquiries, Media, Users],
   globals: [Home, SiteSettings],
   localization: {
     locales: [

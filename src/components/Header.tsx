@@ -8,6 +8,7 @@ export function Header({ locale, tr }: { locale: Locale; tr: T }) {
     ['', tr('nav_home')],
     ['/fleet', tr('nav_fleet')],
     ['/services', tr('nav_services')],
+    ['/facilities', tr('nav_facilities')],
     ['/about', tr('nav_about')],
     ['/contact', tr('nav_contact')],
   ]

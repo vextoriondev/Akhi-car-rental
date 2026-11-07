@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { HeroCarousel, type Slide } from '@/components/HeroCarousel'
 import { SearchBar } from '@/components/SearchBar'
-import { CarCard, ServiceCard } from '@/components/Cards'
-import { getCars, getHome, getServices, getTestimonials, mediaUrl } from '@/lib/payload'
+import { CarCard, FacilityCard, ServiceCard } from '@/components/Cards'
+import { getCars, getFacilities, getHome, getServices, getTestimonials, mediaUrl } from '@/lib/payload'
 import { fallbackSlides } from '@/lib/fallback'
 import { t, type Locale } from '@/lib/i18n'
 import { categoryOptions } from '@/lib/categories'
@@ -10,11 +10,12 @@ import { categoryOptions } from '@/lib/categories'
 export default async function Home({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = await params
   const tr = t(locale)
-  const [home, services, cars, reviews] = await Promise.all([
+  const [home, services, cars, reviews, facilities] = await Promise.all([
     getHome(locale),
     getServices(locale),
     getCars(locale, { featured: true, limit: 6 }),
     getTestimonials(locale),
+    getFacilities(locale),
   ])
   const h: any = home
   const slides: Slide[] = h?.slides?.length
@@ -73,6 +74,21 @@ export default async function Home({ params }: { params: Promise<{ locale: Local
           {(cars as any[]).map((c) => <CarCard key={c.id} car={c} locale={locale} tr={tr} />)}
         </div>
       </section>
+
+      {(facilities as any[]).length > 0 && (
+        <section className="container section">
+          <div className="sec-head">
+            <div>
+              <h2>{tr('facilities_title')}</h2>
+              <p className="muted">{tr('facilities_sub')}</p>
+            </div>
+            <Link className="link" href={`/${locale}/facilities`}>{tr('view_all')} →</Link>
+          </div>
+          <div className="grid g3">
+            {(facilities as any[]).slice(0, 6).map((f) => <FacilityCard key={f.id} f={f} />)}
+          </div>
+        </section>
+      )}
 
       {h?.about?.title && (
         <section className="container section about-band">

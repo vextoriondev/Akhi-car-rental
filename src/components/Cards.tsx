@@ -44,3 +44,13 @@ export function ServiceCard({ s, locale }: { s: any; locale: Locale }) {
     </Link>
   )
 }
+
+export function FacilityCard({ f }: { f: any }) {
+  return (
+    <div className={`card why-card a-${f.accent || 'violet'}`}>
+      <div className="s-icon">{f.icon || '✨'}</div>
+      <h3>{f.title}</h3>
+      <p className="muted small">{f.text}</p>
+    </div>
+  )
+}
