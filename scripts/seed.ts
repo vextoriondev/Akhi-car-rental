@@ -182,7 +182,7 @@ const run = async () => {
 
   await payload.updateGlobal({
     slug: 'site-settings', locale: 'en',
-    data: { phone: '+880 1000 000000', whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '8801000000000', email: 'hello@akhirental.com', address: 'Dhaka, Bangladesh', hours: 'Open 24/7', tagline: 'Drive the extraordinary' },
+    data: { phone: '+880 1625-347735', whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '8801625347735', email: 'hello@akhirental.com', address: 'Dhaka, Bangladesh', hours: 'Open 24/7', tagline: 'Drive the extraordinary' },
   })
   await payload.updateGlobal({
     slug: 'site-settings', locale: 'bn',
