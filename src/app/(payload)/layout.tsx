@@ -13,10 +13,28 @@ const serverFunction: ServerFunctionClient = async function (args) {
   return handleServerFunctions({ ...args, config, importMap })
 }
 
-const Layout = ({ children }: Args) => (
-  <RootLayout config={config} importMap={importMap} serverFunction={serverFunction}>
-    {children}
-  </RootLayout>
+const hasDb = Boolean(
+  process.env.POSTGRES_URL &&
+    !process.env.POSTGRES_URL.includes('user:password@host') &&
+    process.env.POSTGRES_URL.trim() !== '',
 )
+
+const Layout = ({ children }: Args) => {
+  if (!hasDb) {
+    return (
+      <html lang="en">
+        <body style={{ margin: 0, padding: 0, backgroundColor: '#0a0d14' }}>
+          {children}
+        </body>
+      </html>
+    )
+  }
+
+  return (
+    <RootLayout config={config} importMap={importMap} serverFunction={serverFunction}>
+      {children}
+    </RootLayout>
+  )
+}
 
 export default Layout

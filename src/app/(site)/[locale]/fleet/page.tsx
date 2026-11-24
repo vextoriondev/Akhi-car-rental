@@ -1,11 +1,23 @@
-import Link from 'next/link'
-import { CarCard } from '@/components/Cards'
-import { SearchBar } from '@/components/SearchBar'
-import { getCars, getService, getServices } from '@/lib/payload'
+import type { Metadata } from 'next'
+import { FleetBrowser } from '@/components/FleetBrowser'
+import { getCars, getSettings } from '@/lib/payload'
 import { t, type Locale } from '@/lib/i18n'
 import { categoryOptions } from '@/lib/categories'
 
-export const metadata = { title: 'Fleet' }
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: Locale }>
+}): Promise<Metadata> {
+  const { locale } = await params
+  const isBn = locale === 'bn'
+  return {
+    title: isBn ? 'গাড়ি বহর ও মূল্য তালিকা' : 'Our Fleet & Price Comparison',
+    description: isBn
+      ? 'আখি কার রেন্টালের সমস্ত গাড়ির তালিকা, দৈনিক ও মাসিক ভাড়া এবং তুলনা। নোয়া, প্রাডো, হায়েস, অ্যাক্সিও ও লাক্সারি গাড়ি।'
+      : 'Browse Akhi Car Rental fleet in Dhaka. Compare daily & monthly rental prices for Toyota Noah, Prado SUV, Hiace Super GL, Axio, and luxury sedans.',
+  }
+}
 
 export default async function Fleet({
   params,
@@ -17,37 +29,33 @@ export default async function Fleet({
   const { locale } = await params
   const sp = await searchParams
   const tr = t(locale)
-  const services: any[] = await getServices(locale)
-  const svc: any = sp.service ? services.find((s) => s.slug === sp.service) : null
-  const cars: any[] = await getCars(locale, { q: sp.q, category: sp.category, serviceId: svc?.id })
+  const isBn = locale === 'bn'
+
+  const [cars, settings] = await Promise.all([
+    getCars(locale, { limit: 100 }),
+    getSettings(locale),
+  ])
+
+  const s: any = settings
+  const whatsappNumber = s?.whatsapp || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '8801625347735'
   const cats = categoryOptions(locale)
 
   return (
-    <div className="container page">
-      <h1>{tr('fleet_title')}</h1>
-      <p className="muted">{tr('fleet_sub')}</p>
-      <div className="page-search">
-        <SearchBar
-          key={JSON.stringify(sp)}
-          locale={locale}
-          services={services.map((s) => ({ value: s.slug, label: s.title }))}
-          categories={cats}
-          labels={{ placeholder: tr('search_placeholder'), service: tr('search_service'), category: tr('search_category'), btn: tr('search_btn') }}
-        />
+    <div className="container page fleet-page">
+      <div className="fleet-header">
+        <span className="eyebrow">{isBn ? 'সম্পূর্ণ ক্যাটালগ' : 'PREMIUM SELECTION'}</span>
+        <h1>{tr('fleet_title')}</h1>
+        <p className="lead muted">{tr('fleet_sub')}</p>
       </div>
-      <div className="pills">
-        <Link href={`/${locale}/fleet`} className={!sp.category ? 'on' : ''}>{tr('all')}</Link>
-        {cats.map((c) => (
-          <Link key={c.value} href={`/${locale}/fleet?category=${c.value}`} className={sp.category === c.value ? 'on' : ''}>
-            {c.label}
-          </Link>
-        ))}
-      </div>
-      {cars.length ? (
-        <div className="grid g3">{cars.map((c) => <CarCard key={c.id} car={c} locale={locale} tr={tr} />)}</div>
-      ) : (
-        <p className="empty">{tr('no_results')}</p>
-      )}
+
+      <FleetBrowser
+        initialCars={cars}
+        locale={locale}
+        categories={cats}
+        initialCategory={sp.category || ''}
+        initialQuery={sp.q || ''}
+        whatsappNumber={whatsappNumber}
+      />
     </div>
   )
 }

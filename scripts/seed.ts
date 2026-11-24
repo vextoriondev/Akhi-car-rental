@@ -19,13 +19,20 @@ const run = async () => {
     process.exit(0)
   }
 
-  if (process.env.SEED_ADMIN_EMAIL && process.env.SEED_ADMIN_PASSWORD) {
-    const u = await payload.count({ collection: 'users' })
-    if (u.totalDocs === 0)
-      await payload.create({
-        collection: 'users',
-        data: { email: process.env.SEED_ADMIN_EMAIL, password: process.env.SEED_ADMIN_PASSWORD, name: 'Admin' },
-      })
+  const seedEmail = process.env.SEED_ADMIN_EMAIL || 'admin@akhicarrental.com'
+  const seedPassword = process.env.SEED_ADMIN_PASSWORD || 'AkhiRentalAdmin2026!'
+  const u = await payload.count({ collection: 'users' })
+  if (u.totalDocs === 0) {
+    await payload.create({
+      collection: 'users',
+      data: {
+        email: seedEmail,
+        password: seedPassword,
+        name: 'Super Admin',
+        role: 'superadmin',
+      },
+    })
+    console.log(`👤 Admin created: ${seedEmail} / ${seedPassword}`)
   }
 
   type L = { en: string; bn: string }
@@ -130,44 +137,48 @@ const run = async () => {
   })
 
   type Car = {
-    slug: string; brand: string; category: string; accent: string; year: number; seats: number; luggage: number
-    transmission: string; fuel: string; price: number; month?: number; featured?: boolean
+    slug: string; brand: string; category: string; accent: string; year?: number; yearRange?: string; seats: number; luggage: number
+    transmission: string; fuel: string; price?: number; month?: number; featured?: boolean; order?: number
     name: L; desc: L; features: L[]; services: number[]
   }
   const cars: Car[] = [
-    { slug: 'toyota-axio-2019', brand: 'Toyota', category: 'sedan', accent: 'violet', year: 2019, seats: 4, luggage: 2, transmission: 'auto', fuel: 'hybrid', price: 3500, month: 68000, featured: true,
+    { slug: 'toyota-axio-hybrid', brand: 'Toyota', category: 'sedan', accent: 'gold', year: 2019, yearRange: '2016–2020', seats: 4, luggage: 2, transmission: 'auto', fuel: 'hybrid', price: 3500, month: 68000, featured: true, order: 1,
       name: { en: 'Toyota Axio Hybrid', bn: 'টয়োটা অ্যাক্সিও হাইব্রিড' }, desc: { en: 'Smooth, fuel-efficient city sedan for office runs and airport trips.', bn: 'অফিস ও এয়ারপোর্ট ট্রিপের জন্য মসৃণ ও সাশ্রয়ী সেডান।' },
-      features: [{ en: 'Air conditioning', bn: 'এয়ার কন্ডিশন' }, { en: 'Bluetooth audio', bn: 'ব্লুটুথ অডিও' }], services: [daily.id, monthly.id, corporate.id, airport.id] },
-    { slug: 'toyota-noah-2020', brand: 'Toyota', category: 'microbus', accent: 'cyan', year: 2020, seats: 7, luggage: 4, transmission: 'auto', fuel: 'hybrid', price: 6000, month: 110000, featured: true,
-      name: { en: 'Toyota Noah', bn: 'টয়োটা নোয়া' }, desc: { en: 'Spacious 7-seater for family trips and group transfers.', bn: 'ফ্যামিলি ট্রিপ ও গ্রুপ ট্রান্সফারের জন্য প্রশস্ত ৭ সিটার।' },
-      features: [{ en: 'Sliding doors', bn: 'স্লাইডিং ডোর' }, { en: 'Rear AC', bn: 'রিয়ার এসি' }], services: [daily.id, monthly.id, tour.id, airport.id] },
-    { slug: 'toyota-land-cruiser-prado', brand: 'Toyota', category: 'suv', accent: 'amber', year: 2018, seats: 7, luggage: 4, transmission: 'auto', fuel: 'diesel', price: 14000, month: 280000, featured: true,
-      name: { en: 'Toyota Land Cruiser Prado', bn: 'টয়োটা ল্যান্ড ক্রুজার প্রাডো' }, desc: { en: 'Commanding 4x4 comfort for executives, VIPs and rough roads.', bn: 'এক্সিকিউটিভ, ভিআইপি ও কঠিন রাস্তার জন্য শক্তিশালী ৪x৪।' },
-      features: [{ en: 'Leather seats', bn: 'লেদার সিট' }, { en: '4x4', bn: '৪x৪' }], services: [daily.id, corporate.id, tour.id] },
-    { slug: 'toyota-hiace-gl', brand: 'Toyota', category: 'microbus', accent: 'lime', year: 2021, seats: 11, luggage: 6, transmission: 'manual', fuel: 'octane', price: 7500, month: 140000, featured: true,
-      name: { en: 'Toyota Hiace GL', bn: 'টয়োটা হায়েস জিএল' }, desc: { en: 'The go-to van for staff transport, tours and events.', bn: 'স্টাফ ট্রান্সপোর্ট, ট্যুর ও ইভেন্টের জনপ্রিয় ভ্যান।' },
-      features: [{ en: 'High roof', bn: 'হাই রুফ' }, { en: 'Dual AC', bn: 'ডুয়াল এসি' }], services: [corporate.id, tour.id, wedding.id, monthly.id] },
-    { slug: 'mercedes-e-class', brand: 'Mercedes-Benz', category: 'luxury', accent: 'pink', year: 2020, seats: 4, luggage: 3, transmission: 'auto', fuel: 'petrol', price: 18000, featured: true,
-      name: { en: 'Mercedes-Benz E-Class', bn: 'মার্সিডিজ-বেঞ্জ ই-ক্লাস' }, desc: { en: 'Arrive in style — weddings, VIP pickups and board meetings.', bn: 'স্টাইলে পৌঁছান — বিয়ে, ভিআইপি পিকআপ ও বোর্ড মিটিং।' },
-      features: [{ en: 'Chauffeur in uniform', bn: 'ইউনিফর্মধারী শোফার' }, { en: 'Ambient lighting', bn: 'অ্যাম্বিয়েন্ট লাইটিং' }], services: [wedding.id, airport.id, corporate.id] },
-    { slug: 'toyota-corolla-cross', brand: 'Toyota', category: 'suv', accent: 'orange', year: 2022, seats: 5, luggage: 3, transmission: 'auto', fuel: 'hybrid', price: 8000, month: 150000, featured: true,
-      name: { en: 'Toyota Corolla Cross', bn: 'টয়োটা করোলা ক্রস' }, desc: { en: 'Modern crossover with room for the whole crew.', bn: 'পুরো টিমের জন্য জায়গাসহ আধুনিক ক্রসওভার।' },
-      features: [{ en: 'Reverse camera', bn: 'রিভার্স ক্যামেরা' }, { en: 'Sunroof', bn: 'সানরুফ' }], services: [daily.id, monthly.id, tour.id] },
-    { slug: 'toyota-coaster', brand: 'Toyota', category: 'bus', accent: 'cyan', year: 2019, seats: 29, luggage: 10, transmission: 'manual', fuel: 'diesel', price: 16000, month: 320000,
-      name: { en: 'Toyota Coaster', bn: 'টয়োটা কোস্টার' }, desc: { en: 'Mini-bus for corporate shuttles, wedding guests and tour groups.', bn: 'কর্পোরেট শাটল, বিয়ের অতিথি ও ট্যুর গ্রুপের মিনিবাস।' },
-      features: [{ en: 'Reclining seats', bn: 'রিক্লাইনিং সিট' }, { en: 'Luggage bay', bn: 'লাগেজ বে' }], services: [corporate.id, wedding.id, tour.id] },
-    { slug: 'suzuki-alto', brand: 'Suzuki', category: 'economy', accent: 'lime', year: 2021, seats: 4, luggage: 1, transmission: 'auto', fuel: 'petrol', price: 2500, month: 48000,
-      name: { en: 'Suzuki Alto', bn: 'সুজুকি আল্টো' }, desc: { en: 'Light on your budget and easy to park.', bn: 'বাজেটে সাশ্রয়ী এবং পার্কিংয়ে সহজ।' },
-      features: [{ en: 'Great mileage', bn: 'দারুণ মাইলেজ' }], services: [daily.id, monthly.id] },
+      features: [{ en: 'Air conditioning', bn: 'এয়ার কন্ডিশন' }, { en: 'Bluetooth audio', bn: 'ব্লুটুথ অডিও' }, { en: 'Push Start', bn: 'পুশ স্টার্ট' }], services: [daily.id, monthly.id, corporate.id, airport.id] },
+    { slug: 'toyota-noah-deluxe', brand: 'Toyota', category: 'microbus', accent: 'cyan', year: 2021, yearRange: '2018–2022', seats: 7, luggage: 4, transmission: 'auto', fuel: 'hybrid', price: 6000, month: 115000, featured: true, order: 2,
+      name: { en: 'Toyota Noah Deluxe', bn: 'টয়োটা নোয়া ডিলাক্স' }, desc: { en: 'Spacious 7-seater for family trips and group transfers.', bn: 'ফ্যামিলি ট্রিপ ও গ্রুপ ট্রান্সফারের জন্য প্রশস্ত ৭ সিটার।' },
+      features: [{ en: 'Dual sliding doors', bn: 'ডুয়াল স্লাইডিং ডোর' }, { en: 'Rear dual AC', bn: 'রিয়ার ডুয়াল এসি' }, { en: 'Captain seats', bn: 'ক্যাপ্টেন সিট' }], services: [daily.id, monthly.id, tour.id, airport.id] },
+    { slug: 'toyota-land-cruiser-prado', brand: 'Toyota', category: 'suv', accent: 'gold', year: 2020, yearRange: '2018–2022', seats: 7, luggage: 4, transmission: 'auto', fuel: 'diesel', price: 15000, month: 290000, featured: true, order: 3,
+      name: { en: 'Toyota Land Cruiser Prado TX-L', bn: 'টয়োটা ল্যান্ড ক্রুজার প্রাডো টিএক্স-এল' }, desc: { en: 'Commanding 4x4 comfort for executives, VIPs and highway journeys.', bn: 'এক্সিকিউটিভ, ভিআইপি ও দূরপাল্লার মহাসড়কের জন্য রাজকীয় ৪x৪।' },
+      features: [{ en: 'Premium leather interior', bn: 'প্রিমিয়াম লেদার ইন্টেরিয়র' }, { en: 'Full-time 4WD', bn: 'ফুল-টাইম ৪x৪' }, { en: 'Sunroof & Coolbox', bn: 'সানরুফ ও কুলবক্স' }], services: [daily.id, corporate.id, tour.id] },
+    { slug: 'toyota-hiace-super-gl', brand: 'Toyota', category: 'microbus', accent: 'lime', year: 2022, yearRange: '2019–2023', seats: 11, luggage: 6, transmission: 'auto', fuel: 'octane', price: 7500, month: 145000, featured: true, order: 4,
+      name: { en: 'Toyota Hiace Super GL', bn: 'টয়োটা হায়েস সুপার জিএল' }, desc: { en: 'The gold standard van for corporate delegations, family tours and event transport.', bn: 'কর্পোরেট প্রতিনিধি, পরিবার ও ইভেন্টের জন্য সেরা মাইক্রোবাস।' },
+      features: [{ en: 'High roof spacious cabin', bn: 'হাই রুফ প্রশস্ত কেবিন' }, { en: 'Dual chill AC', bn: 'ডুয়াল চিল এসি' }, { en: 'Tinted privacy glass', bn: 'টিন্টেড প্রাইভেসি গ্লাস' }], services: [corporate.id, tour.id, wedding.id, monthly.id] },
+    { slug: 'mercedes-e-class-amg', brand: 'Mercedes-Benz', category: 'luxury', accent: 'gold', year: 2021, yearRange: '2020–2023', seats: 4, luggage: 3, transmission: 'auto', fuel: 'petrol', price: 20000, month: 380000, featured: true, order: 5,
+      name: { en: 'Mercedes-Benz E-Class Luxury', bn: 'মার্সিডিজ-বেঞ্জ ই-ক্লাস লাক্সারি' }, desc: { en: 'Ultimate VIP luxury for state dignitaries, weddings, and high-profile corporate delegates.', bn: 'ভিআইপি প্রটোকল, জমকালো বিয়ে ও হাই-প্রোফাইল মিটিংয়ের জন্য সর্বোচ্চ আভিজাত্য।' },
+      features: [{ en: 'Uniformed chauffeur', bn: 'ইউনিফর্মধারী পেশাদার শোফার' }, { en: 'Burmester surround sound', bn: 'প্রিমিয়াম সাউন্ড সিস্টেম' }, { en: 'Ambient cabin lighting', bn: 'অ্যাম্বিয়েন্ট লাইটিং' }], services: [wedding.id, airport.id, corporate.id] },
+    { slug: 'toyota-hilux-double-cabin', brand: 'Toyota', category: 'pickup', accent: 'amber', year: 2021, yearRange: '2019–2023', seats: 5, luggage: 8, transmission: 'manual', fuel: 'diesel', price: 9000, month: 175000, featured: true, order: 6,
+      name: { en: 'Toyota Hilux Revo Double Cabin', bn: 'টয়োটা হাইল্যাক্স রেভো ডাবল কেবিন' }, desc: { en: 'Heavy-duty rugged 4x4 pickup for project sites, engineering teams and logistics.', bn: 'প্রজেক্ট সাইট, ইঞ্জিনিয়ারিং টিম ও পাহাড়ি রুটের শক্তিশালী ৪x৪ ডাবল কেবিন।' },
+      features: [{ en: 'Heavy duty cargo bed', bn: 'হেভি ডিউটি কার্গো বেড' }, { en: '4x4 Off-road mode', bn: '৪x৪ অফ-রোড মোড' }, { en: 'Reinforced suspension', bn: 'মজবুত সাসপেনশন' }], services: [corporate.id, monthly.id, tour.id] },
+    { slug: 'toyota-allion-executive', brand: 'Toyota', category: 'sedan', accent: 'violet', year: 2018, yearRange: '2015–2019', seats: 4, luggage: 2, transmission: 'auto', fuel: 'octane', month: 72000, featured: false, order: 7,
+      name: { en: 'Toyota Allion Executive (Monthly Dedicated)', bn: 'টয়োটা অ্যালিয়ন এক্সিকিউটিভ (মাসিক ডেডিকেটেড)' }, desc: { en: 'Dedicated monthly rental for office commuters and business executives. Fixed driver & replacement car included.', bn: 'অফিস ও এক্সিকিউটিভদের জন্য ফিক্সড মাসিক রেন্টাল। সার্বক্ষণিক ড্রাইভার ও ব্যাকআপ কার সুবিধা।' },
+      features: [{ en: 'Dedicated regular driver', bn: 'নিয়মিত ডেডিকেটেড ড্রাইভার' }, { en: 'Free replacement car', bn: 'ফ্রি রিপ্লেসমেন্ট ব্যাকআপ' }, { en: 'Monthly billing', bn: 'মাসিক সমন্বিত বিলিং' }], services: [monthly.id, corporate.id] },
+    { slug: 'toyota-coaster-deluxe', brand: 'Toyota', category: 'bus', accent: 'cyan', year: 2020, yearRange: '2018–2022', seats: 29, luggage: 12, transmission: 'manual', fuel: 'diesel', price: 18000, featured: false, order: 8,
+      name: { en: 'Toyota Coaster Executive Coach', bn: 'টয়োটা কোস্টার এক্সিকিউটিভ কোচ' }, desc: { en: 'Full-size 29-seater coach for corporate outings, factories, wedding shuttles, and inter-city tours.', bn: 'কর্পোরেট পিকনিক, ফ্যাক্টরি টিম, বিয়ের গেস্ট ও ট্যুরের জন্য ২৯ সিটার বিলাসবহুল কোচ।' },
+      features: [{ en: 'Reclining high-back seats', bn: 'হাই-ব্যাক রিক্লাইনিং সিট' }, { en: 'Microphone & sound system', bn: 'মাইক্রোফোন ও সাউন্ড সিস্টেম' }, { en: 'Overhead luggage racks', bn: 'ওভারহেড লাগেজ র্যাক' }], services: [corporate.id, wedding.id, tour.id] },
+    { slug: 'mitsubishi-pajero-sport', brand: 'Mitsubishi', category: 'suv', accent: 'gold', year: 2022, yearRange: '2020–2023', seats: 7, luggage: 4, transmission: 'auto', fuel: 'diesel', featured: false, order: 9,
+      name: { en: 'Mitsubishi Pajero Sport Elite (VIP Protocol)', bn: 'মিতসুবিশি পাজেরো স্পোর্ট এলিট (ভিআইপি প্রটোকল)' }, desc: { en: 'Elite SUV available on custom inquiry for VIP protocols, foreign delegations, and government projects.', bn: 'ভিআইপি প্রটোকল, বিদেশি ডেলিগেট ও বিশেষ প্রকল্পের জন্য কাস্টম চাহিদায় প্রস্তুত।' },
+      features: [{ en: 'Armored protection option', bn: 'বিশেষ নিরাপত্তা সুবিধা' }, { en: 'Super Select 4WD-II', bn: 'সুপার সিলেক্ট ৪x৪' }, { en: 'On-demand custom quote', bn: 'চাহিদা অনুযায়ী কাস্টম রেট' }], services: [corporate.id, tour.id] },
   ]
 
   for (const c of cars) {
     const doc = await payload.create({
       collection: 'cars', locale: 'en',
       data: {
-        slug: c.slug, brand: c.brand, category: c.category as any, accent: c.accent as any, year: c.year, seats: c.seats,
+        slug: c.slug, brand: c.brand, category: c.category as any, accent: c.accent as any, year: c.year, yearRange: c.yearRange, seats: c.seats,
         luggage: c.luggage, transmission: c.transmission as any, fuel: c.fuel as any,
         pricePerDay: c.price, pricePerMonth: c.month, withDriver: true, available: true, featured: !!c.featured,
+        status: 'published', order: c.order || 10,
         name: c.name.en, description: c.desc.en, features: c.features.map((f) => ({ label: f.en })), services: c.services,
       },
     })

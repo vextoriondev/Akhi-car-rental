@@ -1,23 +1,44 @@
-/** Stylised side-view car silhouette, used when a car has no photo yet. */
+/** Stylised side-view luxury car silhouette, used when a car has no photo yet. */
 export function CarArt({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 400 160" className={`car-art ${className}`} aria-hidden>
+    <svg viewBox="0 0 420 170" className={`car-art ${className}`} aria-hidden>
       <defs>
-        <linearGradient id="ca" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="var(--c1)" />
-          <stop offset="1" stopColor="var(--c2)" />
+        <linearGradient id="carBody" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#2a2d3d" />
+          <stop offset="50%" stopColor="#d4af37" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#f7d070" />
+        </linearGradient>
+        <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#f7d070" />
+          <stop offset="100%" stopColor="#555" />
         </linearGradient>
       </defs>
+      {/* Aerodynamic car profile */}
       <path
-        d="M20 112 C20 98 32 92 52 88 L96 60 C108 52 124 48 142 48 H250 C272 48 286 56 300 70 L338 84 C362 90 380 96 380 112 V120 H20 Z"
-        fill="url(#ca)"
-        opacity=".95"
+        d="M25 120 C25 106 38 100 60 96 L105 66 C120 56 138 50 160 50 H270 C294 50 310 58 325 74 L365 90 C388 96 405 102 405 120 V130 H25 Z"
+        fill="url(#carBody)"
+        opacity="0.95"
       />
-      <path d="M108 66 L134 56 H190 V86 H92 Z M204 56 H252 C262 56 270 62 278 72 L286 86 H204 Z" fill="#0b0b12" opacity=".55" />
-      <circle cx="104" cy="120" r="26" fill="#0b0b12" />
-      <circle cx="104" cy="120" r="12" fill="url(#ca)" />
-      <circle cx="304" cy="120" r="26" fill="#0b0b12" />
-      <circle cx="304" cy="120" r="12" fill="url(#ca)" />
+      {/* Windows & roofline */}
+      <path
+        d="M118 72 L146 60 H205 V92 H102 Z M220 60 H272 C283 60 292 66 300 76 L310 92 H220 Z"
+        fill="#0d0e15"
+        opacity="0.85"
+      />
+      {/* Headlight & taillight glow */}
+      <path d="M380 94 L404 100 L385 106 Z" fill="#22d3ee" opacity="0.9" style={{ filter: 'drop-shadow(0 0 6px #22d3ee)' }} />
+      <path d="M26 102 L36 102 L32 110 Z" fill="#ef4444" opacity="0.8" />
+      {/* Wheels */}
+      <g>
+        <circle cx="112" cy="128" r="28" fill="#090a0f" stroke="#333" strokeWidth="2" />
+        <circle cx="112" cy="128" r="16" fill="url(#rimGrad)" />
+        <circle cx="112" cy="128" r="6" fill="#111" />
+      </g>
+      <g>
+        <circle cx="320" cy="128" r="28" fill="#090a0f" stroke="#333" strokeWidth="2" />
+        <circle cx="320" cy="128" r="16" fill="url(#rimGrad)" />
+        <circle cx="320" cy="128" r="6" fill="#111" />
+      </g>
     </svg>
   )
 }

@@ -139,42 +139,81 @@ export interface UserAuthOperations {
  */
 export interface Car {
   id: number;
+  /**
+   * Vehicle name (e.g., Toyota Noah, Toyota Prado, Hiace Super GL)
+   */
   name: string;
   /**
-   * URL part, e.g. toyota-noah-2022
+   * URL slug, e.g. toyota-noah-2022
    */
   slug: string;
+  /**
+   * Brand or make (e.g. Toyota, Mitsubishi, Mercedes-Benz, Hyundai)
+   */
   brand: string;
-  category: 'economy' | 'sedan' | 'suv' | 'microbus' | 'luxury' | 'bus';
+  category: 'economy' | 'sedan' | 'suv' | 'microbus' | 'luxury' | 'pickup' | 'bus';
+  /**
+   * Specific model year, e.g. 2022
+   */
   year?: number | null;
+  /**
+   * Model year or span (e.g. 2010–2012, 2018–2022)
+   */
+  yearRange?: string | null;
+  /**
+   * Passenger seating capacity
+   */
   seats: number;
+  /**
+   * Luggage bags capacity
+   */
   luggage?: number | null;
   transmission?: ('auto' | 'manual') | null;
   fuel?: ('octane' | 'petrol' | 'diesel' | 'hybrid' | 'cng' | 'electric') | null;
+  /**
+   * Color (e.g. Pearl White, Jet Black, Silver)
+   */
   color?: string | null;
   /**
-   * BDT per day
+   * BDT per day (leave blank for On Request or monthly-only vehicles)
    */
-  pricePerDay: number;
+  pricePerDay?: number | null;
   /**
-   * BDT per month (monthly rental)
+   * BDT per month (leave blank for On Request or daily-only vehicles)
    */
   pricePerMonth?: number | null;
-  withDriver?: boolean | null;
+  status?: ('published' | 'draft') | null;
   available?: boolean | null;
   featured?: boolean | null;
+  withDriver?: boolean | null;
   /**
-   * Glow colour used on the card when no photo is set
+   * Display priority (lower numbers appear first)
    */
-  accent?: ('violet' | 'pink' | 'amber' | 'cyan' | 'lime' | 'orange') | null;
+  order?: number | null;
+  /**
+   * Accent tone styling used on card badges and glows
+   */
+  accent?: ('gold' | 'violet' | 'pink' | 'amber' | 'cyan' | 'lime' | 'orange') | null;
+  /**
+   * Main hero photo of the vehicle
+   */
   image?: (number | null) | Media;
+  /**
+   * Additional interior & exterior photos
+   */
   gallery?:
     | {
         image: number | Media;
         id?: string | null;
       }[]
     | null;
+  /**
+   * Full description of the vehicle condition, ideal use-cases, and features
+   */
   description?: string | null;
+  /**
+   * Key amenities (e.g. Dual AC, Push Start, Leather Seats, Android Audio)
+   */
   features?:
     | {
         label: string;
@@ -182,7 +221,7 @@ export interface Car {
       }[]
     | null;
   /**
-   * Services this car is offered under
+   * Services this car is offered under (e.g. Airport Transfer, Monthly Rental)
    */
   services?: (number | Service)[] | null;
   updatedAt: string;
@@ -194,6 +233,9 @@ export interface Car {
  */
 export interface Media {
   id: number;
+  /**
+   * Descriptive text for accessibility and SEO
+   */
   alt?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -246,7 +288,7 @@ export interface Service {
    * An emoji shown on the card
    */
   icon?: string | null;
-  accent?: ('violet' | 'pink' | 'amber' | 'cyan' | 'lime' | 'orange') | null;
+  accent?: ('gold' | 'violet' | 'pink' | 'amber' | 'cyan' | 'lime' | 'orange') | null;
   order?: number | null;
   summary: string;
   description?: string | null;
@@ -276,7 +318,7 @@ export interface Facility {
    */
   icon?: string | null;
   text?: string | null;
-  accent?: ('violet' | 'pink' | 'amber' | 'cyan' | 'lime' | 'orange') | null;
+  accent?: ('gold' | 'violet' | 'pink' | 'amber' | 'cyan' | 'lime' | 'orange') | null;
   order?: number | null;
   updatedAt: string;
   createdAt: string;
@@ -300,20 +342,41 @@ export interface Testimonial {
  */
 export interface Inquiry {
   id: number;
+  /**
+   * Customer full name
+   */
   name: string;
+  /**
+   * Contact phone / WhatsApp number
+   */
   phone: string;
+  /**
+   * Email address (optional)
+   */
   email?: string | null;
+  /**
+   * Requested service type
+   */
   service?: (number | null) | Service;
+  /**
+   * Specific vehicle inquired
+   */
   car?: (number | null) | Car;
+  /**
+   * Requested pickup date
+   */
   pickupDate?: string | null;
   /**
-   * e.g. 3 days / 6 months / 1 year contract
+   * Rental duration (e.g. 3 days, 1 month, yearly)
    */
   duration?: string | null;
   /**
-   * For corporate inquiries
+   * Company name if corporate booking
    */
   company?: string | null;
+  /**
+   * Customer message / requirements
+   */
   message?: string | null;
   status?: ('new' | 'contacted' | 'confirmed' | 'closed') | null;
   updatedAt: string;
@@ -325,7 +388,11 @@ export interface Inquiry {
  */
 export interface User {
   id: number;
-  name?: string | null;
+  name: string;
+  /**
+   * Super Admin has full access including user management; Editor manages content, cars, and inquiries.
+   */
+  role: 'superadmin' | 'editor';
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -450,6 +517,7 @@ export interface CarsSelect<T extends boolean = true> {
   brand?: T;
   category?: T;
   year?: T;
+  yearRange?: T;
   seats?: T;
   luggage?: T;
   transmission?: T;
@@ -457,9 +525,11 @@ export interface CarsSelect<T extends boolean = true> {
   color?: T;
   pricePerDay?: T;
   pricePerMonth?: T;
-  withDriver?: T;
+  status?: T;
   available?: T;
   featured?: T;
+  withDriver?: T;
+  order?: T;
   accent?: T;
   image?: T;
   gallery?:
@@ -604,6 +674,7 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -675,7 +746,7 @@ export interface Home {
         subtitle?: string | null;
         ctaLabel?: string | null;
         ctaLink?: string | null;
-        theme?: ('violet' | 'pink' | 'amber' | 'cyan' | 'lime' | 'orange') | null;
+        theme?: ('gold' | 'violet' | 'pink' | 'amber' | 'cyan' | 'lime' | 'orange') | null;
         /**
          * Optional full-page background photo. Without it, an animated gradient is used.
          */
@@ -712,17 +783,41 @@ export interface Home {
  */
 export interface SiteSetting {
   id: number;
+  /**
+   * Custom website brand logo
+   */
+  logo?: (number | null) | Media;
+  /**
+   * Main site title
+   */
+  siteName?: string | null;
+  tagline?: string | null;
+  /**
+   * Public phone number shown to visitors
+   */
   phone?: string | null;
   /**
-   * Digits only with country code, e.g. 8801XXXXXXXXX
+   * WhatsApp number in digits with country code (e.g. 8801625347735)
    */
   whatsapp?: string | null;
+  /**
+   * Support/Inquiry email address
+   */
   email?: string | null;
   address?: string | null;
   hours?: string | null;
-  facebook?: string | null;
-  instagram?: string | null;
-  tagline?: string | null;
+  socials?: {
+    facebook?: string | null;
+    instagram?: string | null;
+    youtube?: string | null;
+    linkedin?: string | null;
+  };
+  footerText?: string | null;
+  seo?: {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    ogImage?: (number | null) | Media;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -774,14 +869,30 @@ export interface HomeSelect<T extends boolean = true> {
  * via the `definition` "site-settings_select".
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
+  logo?: T;
+  siteName?: T;
+  tagline?: T;
   phone?: T;
   whatsapp?: T;
   email?: T;
   address?: T;
   hours?: T;
-  facebook?: T;
-  instagram?: T;
-  tagline?: T;
+  socials?:
+    | T
+    | {
+        facebook?: T;
+        instagram?: T;
+        youtube?: T;
+        linkedin?: T;
+      };
+  footerText?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

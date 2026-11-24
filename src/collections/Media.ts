@@ -2,8 +2,17 @@ import type { CollectionConfig } from 'payload'
 
 export const Media: CollectionConfig = {
   slug: 'media',
-  admin: { group: 'Content' },
-  access: { read: () => true },
+  admin: {
+    group: 'Content',
+    useAsTitle: 'filename',
+    defaultColumns: ['filename', 'alt', 'filesize', 'createdAt'],
+  },
+  access: {
+    read: () => true,
+    create: ({ req }) => Boolean(req.user),
+    update: ({ req }) => Boolean(req.user),
+    delete: ({ req }) => Boolean(req.user),
+  },
   upload: {
     mimeTypes: ['image/*'],
     imageSizes: [
@@ -12,5 +21,12 @@ export const Media: CollectionConfig = {
       { name: 'hero', width: 2000, position: 'centre' },
     ],
   },
-  fields: [{ name: 'alt', type: 'text', localized: true }],
+  fields: [
+    {
+      name: 'alt',
+      type: 'text',
+      localized: true,
+      admin: { description: 'Descriptive text for accessibility and SEO' },
+    },
+  ],
 }

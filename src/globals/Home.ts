@@ -1,11 +1,14 @@
 import type { GlobalConfig } from 'payload'
 
-const themeOptions = ['violet', 'pink', 'amber', 'cyan', 'lime', 'orange']
+const themeOptions = ['gold', 'violet', 'pink', 'amber', 'cyan', 'lime', 'orange']
 
 export const Home: GlobalConfig = {
   slug: 'home',
   label: 'Home Page',
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    update: ({ req }) => Boolean(req.user),
+  },
   fields: [
     {
       name: 'slides',
@@ -18,7 +21,7 @@ export const Home: GlobalConfig = {
         { name: 'subtitle', type: 'textarea', localized: true },
         { name: 'ctaLabel', type: 'text', localized: true },
         { name: 'ctaLink', type: 'text', defaultValue: '/fleet' },
-        { name: 'theme', type: 'select', defaultValue: 'violet', options: themeOptions },
+        { name: 'theme', type: 'select', defaultValue: 'gold', options: themeOptions },
         {
           name: 'image',
           type: 'upload',

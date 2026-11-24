@@ -10,6 +10,8 @@
     "start": "next start",
     "generate:importmap": "payload generate:importmap",
     "generate:types": "payload generate:types",
+    "admin:bootstrap": "tsx scripts/bootstrap-admin.ts",
+    "admin:reset-password": "tsx scripts/reset-admin-password.ts",
     "seed": "tsx scripts/seed.ts",
     "payload": "payload"
   },
@@ -34,5 +36,7 @@
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   },
-  "engines": { "node": ">=20.9" }
+  "engines": {
+    "node": ">=20.9"
+  }
 }

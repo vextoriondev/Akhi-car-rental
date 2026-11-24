@@ -3,7 +3,12 @@ import type { CollectionConfig } from 'payload'
 export const Services: CollectionConfig = {
   slug: 'services',
   admin: { useAsTitle: 'title', group: 'Catalog', defaultColumns: ['title', 'type', 'order'] },
-  access: { read: () => true },
+  access: {
+    read: () => true,
+    create: ({ req }) => Boolean(req.user),
+    update: ({ req }) => Boolean(req.user),
+    delete: ({ req }) => Boolean(req.user),
+  },
   defaultSort: 'order',
   fields: [
     { name: 'title', type: 'text', required: true, localized: true },
@@ -26,8 +31,8 @@ export const Services: CollectionConfig = {
     {
       name: 'accent',
       type: 'select',
-      defaultValue: 'violet',
-      options: ['violet', 'pink', 'amber', 'cyan', 'lime', 'orange'],
+      defaultValue: 'gold',
+      options: ['gold', 'violet', 'pink', 'amber', 'cyan', 'lime', 'orange'],
     },
     { name: 'order', type: 'number', defaultValue: 10 },
     { name: 'summary', type: 'textarea', required: true, localized: true },
