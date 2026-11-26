@@ -1,12 +1,15 @@
 import type { GlobalConfig } from 'payload'
+import { isLoggedIn } from '../server/access'
+import { globalContentHooks } from '../server/revalidate'
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
   label: 'Site Settings',
   access: {
     read: () => true,
-    update: ({ req }) => Boolean(req.user),
+    update: isLoggedIn,
   },
+  hooks: globalContentHooks,
   fields: [
     {
       name: 'logo',
@@ -17,14 +20,14 @@ export const SiteSettings: GlobalConfig = {
     {
       name: 'siteName',
       type: 'text',
-      defaultValue: 'Akhi Car Rental',
+      defaultValue: 'New Akhi Rent-a-Car',
       admin: { description: 'Main site title' },
     },
     {
       name: 'tagline',
       type: 'text',
       localized: true,
-      defaultValue: 'Premium Car Rental & Chauffeur Service in Bangladesh',
+      defaultValue: 'Daily and monthly car rental in Dhaka',
     },
     {
       type: 'row',
@@ -56,13 +59,13 @@ export const SiteSettings: GlobalConfig = {
           name: 'address',
           type: 'text',
           localized: true,
-          defaultValue: 'Sector 3, Uttara, Dhaka, Bangladesh',
+          defaultValue: '63, Mohakhali, Dhaka-1213, Bangladesh',
         },
         {
           name: 'hours',
           type: 'text',
           localized: true,
-          defaultValue: '24/7 Available (Open 24 Hours)',
+          admin: { description: 'Opening hours. Hidden on the website while empty.' },
         },
       ],
     },
@@ -70,7 +73,7 @@ export const SiteSettings: GlobalConfig = {
       name: 'socials',
       type: 'group',
       fields: [
-        { name: 'facebook', type: 'text', defaultValue: 'https://facebook.com/akhicarrental' },
+        { name: 'facebook', type: 'text' },
         { name: 'instagram', type: 'text' },
         { name: 'youtube', type: 'text' },
         { name: 'linkedin', type: 'text' },
@@ -81,7 +84,7 @@ export const SiteSettings: GlobalConfig = {
       type: 'textarea',
       localized: true,
       defaultValue:
-        'Akhi Car Rental is a premier luxury and corporate car rental service provider in Bangladesh. Experience world-class reliability, courteous professional chauffeurs, and competitive transparent pricing.',
+        'New Akhi Rent-a-Car offers cars, microbuses, SUVs and pickups on daily and monthly rental from Mohakhali, Dhaka.',
     },
     {
       name: 'seo',
@@ -92,14 +95,14 @@ export const SiteSettings: GlobalConfig = {
           name: 'metaTitle',
           type: 'text',
           localized: true,
-          defaultValue: 'Akhi Car Rental — Premium Car Rental & Chauffeur Solution',
+          defaultValue: 'New Akhi Rent-a-Car — Car Rental in Dhaka',
         },
         {
           name: 'metaDescription',
           type: 'textarea',
           localized: true,
           defaultValue:
-            'Rent luxury sedans, premium SUVs, Hiace microbuses, and executive coaches across Dhaka and Bangladesh. 24/7 airport transfer, daily and monthly car rental with professional drivers.',
+            'Rent a car in Dhaka from New Akhi Rent-a-Car: Toyota Noah, HiAce, Axio, Prado, Mercedes-Benz, BMW and double cabin pickups at daily and monthly rates.',
         },
         {
           name: 'ogImage',

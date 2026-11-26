@@ -1,15 +1,16 @@
+import { SITE_URL } from '@/lib/site'
 import type { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://akhi-car-rental.vercel.app'
   return {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
-        disallow: ['/admin/', '/api/'],
+        // Car photos are served from /api/media and must stay crawlable.
+        allow: ['/', '/api/media/'],
+        disallow: ['/admin', '/api/'],
       },
     ],
-    sitemap: `${siteUrl}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   }
 }

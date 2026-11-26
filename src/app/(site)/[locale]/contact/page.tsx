@@ -1,130 +1,62 @@
 import type { Metadata } from 'next'
 import { InquiryForm } from '@/components/InquiryForm'
-import { formLabels, formOptions } from '@/lib/form'
-import { getSettings } from '@/lib/payload'
-import { buildWhatsAppUrl, t, type Locale } from '@/lib/i18n'
+import { PageHero } from '@/components/Blocks'
+import { Icon, WhatsAppIcon } from '@/components/Icons'
+import { getSettings } from '@/lib/data'
+import { inquiryOptions } from '@/lib/inquiry-options'
+import { t, toLocale } from '@/lib/i18n'
+import { greetingUrl } from '@/lib/format'
+import { telHref } from '@/lib/site'
+import { pageMetadata } from '@/lib/seo'
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: Locale }>
-}): Promise<Metadata> {
-  const { locale } = await params
-  const isBn = locale === 'bn'
-  return {
-    title: isBn ? 'যোগাযোগ ও বুকিং' : 'Contact & Instant Booking',
-    description: isBn
-      ? 'আখি কার রেন্টাল উত্তরা, ঢাকা। ২৪/৭ কল ও হোয়াটসঅ্যাপ হটলাইন। তাৎক্ষণিক গাড়ি বুকিং।'
-      : 'Contact Akhi Car Rental Dhaka. 24/7 hotline and instant WhatsApp support for all vehicle bookings.',
-  }
+type Props = { params: Promise<{ locale: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const locale = toLocale((await params).locale)
+  const tr = t(locale)
+  const s = await getSettings(locale)
+  return pageMetadata({ locale, path: '/contact', title: tr('contact_title'), description: `${tr('contact_sub')} ${s.phone} · ${s.address}`, siteName: s.siteName })
 }
 
-export default async function Contact({
-  params,
-}: {
-  params: Promise<{ locale: Locale }>
-  searchParams?: Promise<{ service?: string }>
-}) {
-  const { locale } = await params
+export default async function Contact({ params }: Props) {
+  const locale = toLocale((await params).locale)
   const tr = t(locale)
-  const isBn = locale === 'bn'
-  const [opts, s]: any = await Promise.all([formOptions(locale), getSettings(locale)])
-  const wa = s?.whatsapp || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '8801625347735'
-  const waUrl = buildWhatsAppUrl({ phone: wa, locale })
+  const [options, s] = await Promise.all([inquiryOptions(locale), getSettings(locale)])
 
   return (
-    <div className="container page contact-page">
-      <div className="page-header">
-        <span className="eyebrow">{isBn ? '২৪/৭ সার্বক্ষণিক যোগাযোগ' : 'ALWAYS AT YOUR SERVICE'}</span>
-        <h1>{tr('contact_title')}</h1>
-        <p className="lead muted">{tr('contact_sub')}</p>
-      </div>
-
-      <div className="contact-grid">
-        {/* Left: Contact Info Cards */}
-        <div className="contact-info-column">
-          <div className="card info-box">
-            <h3>{isBn ? 'সরাসরি হটলাইন' : 'Direct Dispatch Hotline'}</h3>
-            <p className="muted small">
-              {isBn
-                ? 'যেকোনো বুকিং, জিজ্ঞাসা বা সহায়তার জন্য সরাসরি কল অথবা হোয়াটসঅ্যাপ করুন।'
-                : 'For immediate vehicle dispatch, rate inquiries, and corporate fleet consultations.'}
-            </p>
-
-            <div className="info-items-list">
-              <a href={`tel:${(s?.phone || '+8801625347735').replace(/\s/g, '')}`} className="info-item-row">
-                <span className="info-icon">📞</span>
-                <div>
-                  <small className="muted">{isBn ? '২৪/৭ ফোন হেল্পলাইন' : 'Phone Helpline'}</small>
-                  <strong>{s?.phone || '+880 1625-347735'}</strong>
-                </div>
-              </a>
-
-              <a href={waUrl} target="_blank" rel="noreferrer" className="info-item-row wa-row">
-                <span className="info-icon wa-icon">💬</span>
-                <div>
-                  <small className="muted">{isBn ? 'তাৎক্ষণিক হোয়াটসঅ্যাপ' : 'Instant WhatsApp'}</small>
-                  <strong>+{wa}</strong>
-                </div>
-              </a>
-
-              <a href={`mailto:${s?.email || 'akhicarrental77@gmail.com'}`} className="info-item-row">
-                <span className="info-icon">✉️</span>
-                <div>
-                  <small className="muted">{isBn ? 'অফিসিয়াল ইমেইল' : 'Inquiry Email'}</small>
-                  <strong>{s?.email || 'akhicarrental77@gmail.com'}</strong>
-                </div>
-              </a>
-
-              <div className="info-item-row">
-                <span className="info-icon">📍</span>
-                <div>
-                  <small className="muted">{isBn ? 'অফিস ও গ্যারেজের ঠিকানা' : 'Office & Dispatch Depot'}</small>
-                  <span>{s?.address || 'House 12, Road 4, Sector 3, Uttara, Dhaka, Bangladesh'}</span>
-                </div>
-              </div>
-
-              <div className="info-item-row">
-                <span className="info-icon">🕒</span>
-                <div>
-                  <small className="muted">{isBn ? 'কার্যকাল' : 'Operating Hours'}</small>
-                  <span>{s?.hours || '24 Hours / 7 Days a Week'}</span>
-                </div>
-              </div>
+    <>
+      <PageHero eyebrow={tr('contact_eyebrow')} title={tr('contact_title')} text={tr('contact_sub')} />
+      <section className="container page-body contact-grid">
+        <div className="contact-list">
+          <h2 className="sr-only">{tr('footer_contact')}</h2>
+          <a href={telHref(s.phone)}>
+            <Icon name="phone" size={22} />
+            <span><small>{tr('contact_phone')}</small><b>{s.phone}</b></span>
+          </a>
+          <a href={greetingUrl(s.whatsapp, locale)} target="_blank" rel="noopener noreferrer" className="is-wa">
+            <WhatsAppIcon size={22} />
+            <span><small>{tr('whatsapp')}</small><b>{tr('whatsapp_chat')}</b></span>
+          </a>
+          <a href={`mailto:${s.email}`}>
+            <Icon name="mail" size={22} />
+            <span><small>{tr('contact_email')}</small><b>{s.email}</b></span>
+          </a>
+          <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address)}`} target="_blank" rel="noopener noreferrer">
+            <Icon name="pin" size={22} />
+            <span><small>{tr('contact_address')}</small><b>{s.address}</b><small>{tr('open_map')} →</small></span>
+          </a>
+          {s.hours && (
+            <div>
+              <Icon name="clock" size={22} />
+              <span><small>{tr('contact_hours')}</small><b>{s.hours}</b></span>
             </div>
-
-            <div className="wa-quick-card">
-              <h4>{isBn ? 'দ্রুত সমাধান চান?' : 'Need an Instant Answer?'}</h4>
-              <p className="small muted">
-                {isBn
-                  ? 'হোয়াটসঅ্যাপে আমাদের সাথে সরাসরি চ্যাট করুন, আমরা ২ মিনিটের মধ্যেই সাড়া দেব।'
-                  : 'Message us directly on WhatsApp. Our dispatch manager responds within 2 minutes.'}
-              </p>
-              <a href={waUrl} target="_blank" rel="noreferrer" className="btn btn-wa-block">
-                💬 {tr('whatsapp_chat')}
-              </a>
-            </div>
-          </div>
+          )}
         </div>
-
-        {/* Right: Booking Inquiry Form */}
-        <div className="contact-form-column">
-          <div className="card form-container-card">
-            <h3 className="form-head-title">{tr('inquiry_title')}</h3>
-            <p className="muted small form-head-sub">
-              {isBn
-                ? 'আপনার ভ্রমণের তথ্য দিন, আমরা সেরা কোটেশন নিয়ে যোগাযোগ করব।'
-                : 'Fill in your itinerary details and receive a customized quote promptly.'}
-            </p>
-            <InquiryForm
-              services={opts.services}
-              cars={opts.cars}
-              whatsapp={opts.whatsapp}
-              labels={formLabels(tr)}
-            />
-          </div>
+        <div>
+          <h2 className="form-heading">{tr('inquiry_title')}</h2>
+          <InquiryForm locale={locale} {...options} whatsapp={s.whatsapp} />
         </div>
-      </div>
-    </div>
+      </section>
+    </>
   )
 }

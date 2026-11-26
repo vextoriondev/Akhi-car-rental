@@ -1,59 +1,28 @@
 import type { MetadataRoute } from 'next'
-import { getCars, getServices } from '@/lib/payload'
+import { getCars, getServices } from '@/lib/data'
+import { locales } from '@/lib/i18n'
+import { SITE_URL } from '@/lib/site'
+
+export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://akhi-car-rental.vercel.app'
-  const locales = ['en', 'bn']
-
-  const staticRoutes = ['', '/fleet', '/services', '/facilities', '/about', '/contact']
-
-  const routes: MetadataRoute.Sitemap = []
-
-  // Add static routes for both locales
-  for (const locale of locales) {
-    for (const route of staticRoutes) {
-      routes.push({
-        url: `${siteUrl}/${locale}${route}`,
-        lastModified: new Date(),
-        changeFrequency: route === '' || route === '/fleet' ? 'daily' : 'weekly',
-        priority: route === '' ? 1.0 : route === '/fleet' ? 0.9 : 0.8,
-      })
-    }
-  }
-
-  // Add dynamic cars for both locales
-  try {
-    const cars = await getCars('en', { limit: 100 })
-    for (const car of cars) {
-      for (const locale of locales) {
-        routes.push({
-          url: `${siteUrl}/${locale}/fleet/${car.slug}`,
-          lastModified: new Date(),
-          changeFrequency: 'weekly',
-          priority: 0.85,
-        })
-      }
-    }
-  } catch (e) {
-    // Graceful fallback
-  }
-
-  // Add dynamic services for both locales
-  try {
-    const services = await getServices('en')
-    for (const svc of services) {
-      for (const locale of locales) {
-        routes.push({
-          url: `${siteUrl}/${locale}/services/${svc.slug}`,
-          lastModified: new Date(),
-          changeFrequency: 'monthly',
-          priority: 0.75,
-        })
-      }
-    }
-  } catch (e) {
-    // Graceful fallback
-  }
-
-  return routes
+  const [cars, services] = await Promise.all([getCars('en').catch(() => []), getServices('en').catch(() => [])])
+  const pages: { path: string; updated?: string; priority: number }[] = [
+    { path: '', priority: 1 },
+    { path: '/fleet', priority: 0.9 },
+    { path: '/services', priority: 0.8 },
+    { path: '/facilities', priority: 0.6 },
+    { path: '/about', priority: 0.6 },
+    { path: '/contact', priority: 0.7 },
+    ...cars.map((c) => ({ path: `/fleet/${c.slug}`, updated: c.updatedAt, priority: 0.8 })),
+    ...services.map((s) => ({ path: `/services/${s.slug}`, priority: 0.7 })),
+  ]
+  return pages.flatMap(({ path, updated, priority }) =>
+    locales.map((locale) => ({
+      url: `${SITE_URL}/${locale}${path}`,
+      ...(updated ? { lastModified: new Date(updated) } : {}),
+      priority,
+      alternates: { languages: Object.fromEntries(locales.map((l) => [l, `${SITE_URL}/${l}${path}`])) },
+    })),
+  )
 }

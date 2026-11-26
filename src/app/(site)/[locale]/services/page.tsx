@@ -1,42 +1,37 @@
 import type { Metadata } from 'next'
-import { ServiceCard } from '@/components/Cards'
-import { getServices } from '@/lib/payload'
-import { t, type Locale } from '@/lib/i18n'
+import { CtaBand, HowItWorks, PageHero, SectionHead, ServiceCard } from '@/components/Blocks'
+import { getServices, getSettings } from '@/lib/data'
+import { t, toLocale } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/seo'
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: Locale }>
-}): Promise<Metadata> {
-  const { locale } = await params
-  const isBn = locale === 'bn'
-  return {
-    title: isBn ? 'আমাদের সার্ভিসের তালিকা' : 'Our Rental Services & Packages',
-    description: isBn
-      ? 'দৈনিক ও মাসিক কার রেন্টাল, কর্পোরেট চুক্তি, এয়ারপোর্ট ট্রান্সফার, ওয়েডিং ও ট্যুর সার্ভিস।'
-      : 'Explore specialized chauffeur services: airport transfers, corporate fleet contracts, monthly rentals, and outstation tours.',
-  }
+type Props = { params: Promise<{ locale: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const locale = toLocale((await params).locale)
+  const tr = t(locale)
+  const s = await getSettings(locale)
+  return pageMetadata({ locale, path: '/services', title: tr('services_title'), description: tr('services_sub'), siteName: s.siteName })
 }
 
-export default async function ServicesPage({ params }: { params: Promise<{ locale: Locale }> }) {
-  const { locale } = await params
+export default async function ServicesPage({ params }: Props) {
+  const locale = toLocale((await params).locale)
   const tr = t(locale)
-  const isBn = locale === 'bn'
-  const services: any[] = await getServices(locale)
+  const [services, s] = await Promise.all([getServices(locale), getSettings(locale)])
 
   return (
-    <div className="container page services-page">
-      <div className="page-header">
-        <span className="eyebrow">{isBn ? 'বিশেষায়িত সেবা' : 'TAILORED CHAUFFEUR PACKAGES'}</span>
-        <h1>{tr('services_title')}</h1>
-        <p className="lead muted">{tr('our_services_sub')}</p>
-      </div>
-
-      <div className="grid g3 services-full-grid">
-        {services.map((s) => (
-          <ServiceCard key={s.id || s.slug} s={s} locale={locale} />
-        ))}
-      </div>
-    </div>
+    <>
+      <PageHero eyebrow={tr('services_eyebrow')} title={tr('services_title')} text={tr('services_sub')} />
+      <section className="container page-body">
+        <h2 className="sr-only">{tr('nav_services')}</h2>
+        <div className="card-grid">
+          {services.map((x) => <ServiceCard key={x.id} service={x} locale={locale} />)}
+        </div>
+      </section>
+      <section className="container section">
+        <SectionHead eyebrow={tr('how_eyebrow')} title={tr('how_title')} center />
+        <HowItWorks locale={locale} />
+      </section>
+      <CtaBand locale={locale} s={s} />
+    </>
   )
 }

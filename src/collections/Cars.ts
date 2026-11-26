@@ -1,18 +1,33 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, FieldHook } from 'payload'
+import { isLoggedIn, publishedOrLoggedIn } from '../server/access'
+import { contentHooks } from '../server/revalidate'
+
+const slugify = (v: string) =>
+  v.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+
+/** Keeps URLs clean, and builds one from the name + model year when left empty. */
+const formatSlug: FieldHook = ({ value, data }) => {
+  const source = value || [data?.name, data?.yearRange || data?.year].filter(Boolean).join(' ')
+  return source ? slugify(String(source)) : value
+}
 
 export const Cars: CollectionConfig = {
   slug: 'cars',
+  labels: { singular: 'Vehicle', plural: 'Vehicles' },
   admin: {
     useAsTitle: 'name',
     group: 'Catalog',
-    defaultColumns: ['name', 'category', 'pricePerDay', 'pricePerMonth', 'available', 'featured', 'status'],
+    defaultColumns: ['image', 'name', 'yearRange', 'brand', 'pricePerDay', 'pricePerMonth', 'available', 'status'],
+    listSearchableFields: ['name', 'brand', 'slug', 'yearRange'],
+    pagination: { defaultLimit: 50 },
   },
   access: {
-    read: () => true,
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    read: publishedOrLoggedIn,
+    create: isLoggedIn,
+    update: isLoggedIn,
+    delete: isLoggedIn,
   },
+  hooks: contentHooks,
   defaultSort: 'order',
   fields: [
     {
@@ -20,7 +35,7 @@ export const Cars: CollectionConfig = {
       type: 'text',
       required: true,
       localized: true,
-      admin: { description: 'Vehicle name (e.g., Toyota Noah, Toyota Prado, Hiace Super GL)' },
+      admin: { description: 'Vehicle name without the year, e.g. Toyota X-Noah' },
     },
     {
       name: 'slug',
@@ -28,7 +43,8 @@ export const Cars: CollectionConfig = {
       required: true,
       unique: true,
       index: true,
-      admin: { description: 'URL slug, e.g. toyota-noah-2022' },
+      hooks: { beforeValidate: [formatSlug] },
+      admin: { description: 'Web address. Leave empty to create it from the name and model year.' },
     },
     {
       name: 'brand',
@@ -74,7 +90,7 @@ export const Cars: CollectionConfig = {
         {
           name: 'luggage',
           type: 'number',
-          defaultValue: 2,
+          min: 0,
           admin: { description: 'Luggage bags capacity' },
         },
       ],
@@ -85,7 +101,6 @@ export const Cars: CollectionConfig = {
         {
           name: 'transmission',
           type: 'select',
-          defaultValue: 'auto',
           options: [
             { label: 'Automatic', value: 'auto' },
             { label: 'Manual', value: 'manual' },
@@ -94,7 +109,6 @@ export const Cars: CollectionConfig = {
         {
           name: 'fuel',
           type: 'select',
-          defaultValue: 'octane',
           options: [
             { label: 'Octane', value: 'octane' },
             { label: 'Petrol', value: 'petrol' },
@@ -113,52 +127,58 @@ export const Cars: CollectionConfig = {
         {
           name: 'pricePerDay',
           type: 'number',
-          required: false,
-          admin: { description: 'BDT per day (leave blank for On Request or monthly-only vehicles)' },
+          label: 'Daily fare (BDT)',
+          min: 0,
+          admin: { description: 'Leave empty to hide. With both fares empty the site shows "Price on Request".' },
         },
         {
           name: 'pricePerMonth',
           type: 'number',
-          required: false,
-          admin: { description: 'BDT per month (leave blank for On Request or daily-only vehicles)' },
+          label: 'Monthly fare (BDT)',
+          min: 0,
+          admin: { description: 'Leave empty for daily-only vehicles.' },
         },
       ],
     },
     {
-      type: 'row',
-      fields: [
-        {
-          name: 'status',
-          type: 'select',
-          defaultValue: 'published',
-          options: [
-            { label: 'Published', value: 'published' },
-            { label: 'Draft', value: 'draft' },
-          ],
-        },
-        { name: 'available', type: 'checkbox', defaultValue: true },
-        { name: 'featured', type: 'checkbox', defaultValue: false },
-        { name: 'withDriver', type: 'checkbox', defaultValue: true },
-        {
-          name: 'order',
-          type: 'number',
-          defaultValue: 10,
-          admin: { description: 'Display priority (lower numbers appear first)' },
-        },
+      name: 'status',
+      type: 'select',
+      defaultValue: 'published',
+      index: true,
+      options: [
+        { label: 'Published (visible on website)', value: 'published' },
+        { label: 'Draft (hidden)', value: 'draft' },
       ],
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'available',
+      label: 'Available for booking',
+      type: 'checkbox',
+      defaultValue: true,
+      admin: { position: 'sidebar', description: 'Untick to show the vehicle as "Booked".' },
+    },
+    { name: 'featured', label: 'Show on home page', type: 'checkbox', defaultValue: false, admin: { position: 'sidebar' } },
+    { name: 'withDriver', label: 'Offered with driver', type: 'checkbox', defaultValue: true, admin: { position: 'sidebar' } },
+    {
+      name: 'order',
+      type: 'number',
+      defaultValue: 100,
+      admin: { position: 'sidebar', description: 'Lower numbers appear first' },
     },
     {
       name: 'accent',
       type: 'select',
       defaultValue: 'gold',
-      admin: { description: 'Accent tone styling used on card badges and glows' },
+      admin: { hidden: true },
       options: ['gold', 'violet', 'pink', 'amber', 'cyan', 'lime', 'orange'],
     },
     {
       name: 'image',
       type: 'upload',
       relationTo: 'media',
-      admin: { description: 'Main hero photo of the vehicle' },
+      label: 'Main photo',
+      admin: { description: 'Without a photo the site shows "Photos on request".' },
     },
     {
       name: 'gallery',
@@ -175,7 +195,7 @@ export const Cars: CollectionConfig = {
     {
       name: 'features',
       type: 'array',
-      admin: { description: 'Key amenities (e.g. Dual AC, Push Start, Leather Seats, Android Audio)' },
+      admin: { description: 'Confirmed amenities only' },
       fields: [{ name: 'label', type: 'text', required: true, localized: true }],
     },
     {

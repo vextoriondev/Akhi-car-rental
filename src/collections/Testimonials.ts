@@ -1,14 +1,12 @@
 import type { CollectionConfig } from 'payload'
+import { publicContent } from '../server/access'
+import { contentHooks } from '../server/revalidate'
 
 export const Testimonials: CollectionConfig = {
   slug: 'testimonials',
   admin: { useAsTitle: 'name', group: 'Content' },
-  access: {
-    read: () => true,
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
-  },
+  access: publicContent,
+  hooks: contentHooks,
   fields: [
     { name: 'name', type: 'text', required: true },
     { name: 'role', type: 'text', localized: true },

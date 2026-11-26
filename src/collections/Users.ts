@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { isSuperAdmin, isSuperAdminField, isSuperAdminOrSelf } from '../server/access'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -7,26 +8,30 @@ export const Users: CollectionConfig = {
     group: 'System',
     defaultColumns: ['name', 'email', 'role', 'createdAt'],
   },
-  auth: true,
+  auth: {
+    maxLoginAttempts: 5,
+    lockTime: 10 * 60 * 1000,
+    tokenExpiration: 60 * 60 * 8,
+  },
   access: {
-    // Only authenticated users can access admin panel (allow unauthenticated to load login page)
-    admin: ({ req: { user } }) => !user || ['superadmin', 'editor'].includes((user as any)?.role),
-    // Superadmin can see all users; editors can view their own profile
-    read: ({ req: { user } }) => {
-      if (!user) return false
-      if ((user as any).role === 'superadmin') return true
-      return { id: { equals: user.id } }
-    },
-    // Allow creating the first user (when no user is logged in), or superadmin can create new users
-    create: ({ req: { user } }) => !user || (user as any)?.role === 'superadmin',
-    // Superadmin can update anyone; users can update themselves
-    update: ({ req: { user } }) => {
-      if (!user) return false
-      if ((user as any).role === 'superadmin') return true
-      return { id: { equals: user.id } }
-    },
-    // Only superadmin can delete users
-    delete: ({ req: { user } }) => (user as any)?.role === 'superadmin',
+    admin: ({ req }) => ['superadmin', 'editor'].includes((req.user as { role?: string } | null)?.role ?? ''),
+    read: isSuperAdminOrSelf,
+    // The very first account is registered through Payload's dedicated first-user
+    // endpoint, which only works while no user exists. Everything else needs a super admin.
+    create: isSuperAdmin,
+    update: isSuperAdminOrSelf,
+    delete: isSuperAdmin,
+  },
+  hooks: {
+    beforeChange: [
+      async ({ data, operation, req }) => {
+        if (operation === 'create') {
+          const { totalDocs } = await req.payload.count({ collection: 'users', req })
+          if (totalDocs === 0) data.role = 'superadmin'
+        }
+        return data
+      },
+    ],
   },
   fields: [
     { name: 'name', type: 'text', required: true },
@@ -34,13 +39,13 @@ export const Users: CollectionConfig = {
       name: 'role',
       type: 'select',
       required: true,
-      defaultValue: 'superadmin',
+      defaultValue: 'editor',
       options: [
         { label: 'Super Admin (Full Access)', value: 'superadmin' },
         { label: 'Editor (Manage Content, Fleet & Inquiries)', value: 'editor' },
       ],
       access: {
-        update: ({ req: { user } }) => (user as any)?.role === 'superadmin',
+        update: isSuperAdminField,
       },
       admin: {
         description: 'Super Admin has full access including user management; Editor manages content, cars, and inquiries.',

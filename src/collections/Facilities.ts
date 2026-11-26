@@ -1,14 +1,12 @@
 import type { CollectionConfig } from 'payload'
+import { publicContent } from '../server/access'
+import { contentHooks } from '../server/revalidate'
 
 export const Facilities: CollectionConfig = {
   slug: 'facilities',
   admin: { useAsTitle: 'title', group: 'Content', defaultColumns: ['title', 'icon', 'order'] },
-  access: {
-    read: () => true,
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
-  },
+  access: publicContent,
+  hooks: contentHooks,
   defaultSort: 'order',
   fields: [
     { name: 'title', type: 'text', required: true, localized: true },

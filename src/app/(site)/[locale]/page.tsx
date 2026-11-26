@@ -1,308 +1,227 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
-import { HeroCarousel, type Slide } from '@/components/HeroCarousel'
+import { Hero } from '@/components/Hero'
 import { SearchBar } from '@/components/SearchBar'
-import { CarCard, FacilityCard, ServiceCard } from '@/components/Cards'
-import {
-  getCars,
-  getFacilities,
-  getHome,
-  getServices,
-  getSettings,
-  getTestimonials,
-  mediaUrl,
-} from '@/lib/payload'
-import { fallbackSlides } from '@/lib/fallback'
-import { buildWhatsAppUrl, t, type Locale } from '@/lib/i18n'
+import { CarCard } from '@/components/CarCard'
+import { CtaBand, FeatureCard, HowItWorks, SectionHead, ServiceCard } from '@/components/Blocks'
+import { Icon, WhatsAppIcon, type IconName } from '@/components/Icons'
+import { getCars, getFacilities, getHome, getServices, getSettings, getTestimonials } from '@/lib/data'
+import { t, toLocale } from '@/lib/i18n'
 import { categoryOptions } from '@/lib/categories'
+import { greetingUrl, money } from '@/lib/format'
+import { pageMetadata } from '@/lib/seo'
 
-export default async function Home({ params }: { params: Promise<{ locale: Locale }> }) {
-  const { locale } = await params
+type Props = { params: Promise<{ locale: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const locale = toLocale((await params).locale)
+  const [s, home] = await Promise.all([getSettings(locale), getHome(locale).catch(() => null)])
+  return pageMetadata({
+    locale,
+    path: '',
+    description: s.metaDescription || s.tagline,
+    image: home?.slides[0]?.photo?.url,
+    siteName: s.siteName,
+  })
+}
+
+export default async function Home({ params }: Props) {
+  const locale = toLocale((await params).locale)
   const tr = t(locale)
-  const isBn = locale === 'bn'
-
-  const [home, services, cars, reviews, facilities, settings] = await Promise.all([
+  const [home, services, cars, facilities, reviews, s] = await Promise.all([
     getHome(locale),
     getServices(locale),
-    getCars(locale, { featured: true, limit: 6 }),
-    getTestimonials(locale),
+    getCars(locale),
     getFacilities(locale),
+    getTestimonials(locale),
     getSettings(locale),
   ])
 
-  const h: any = home
-  const s: any = settings
-  const whatsappNumber = s?.whatsapp || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '8801625347735'
-  const waUrl = buildWhatsAppUrl({ phone: whatsappNumber, locale })
-
-  const slides: Slide[] = h?.slides?.length
-    ? h.slides.map((slide: any) => ({ ...slide, imageUrl: mediaUrl(slide.image) || slide.imageUrl }))
-    : fallbackSlides(locale)
+  const brands = [...new Set(cars.map((c) => c.brand))]
+  const featured = cars.filter((c) => c.featured).slice(0, 6)
+  const showcase = featured.length ? featured : cars.slice(0, 6)
+  const lowest = (key: 'pricePerDay' | 'pricePerMonth') => {
+    const values = cars.map((c) => c[key]).filter((v): v is number => v !== null)
+    return values.length ? money(Math.min(...values)) : null
+  }
+  const fromDay = lowest('pricePerDay')
+  const fromMonth = lowest('pricePerMonth')
+  // Figures come from the live catalogue; staff can replace them with their own in the CMS.
+  const cmsIcons: IconName[] = ['shield', 'car', 'calendar', 'clock']
+  const strip: { icon: IconName; value: string; label: string }[] = home.stats.length
+    ? home.stats.map((x, i) => ({ ...x, icon: cmsIcons[i % cmsIcons.length] }))
+    : [
+        ...(cars.length
+          ? [
+              { icon: 'car' as const, value: String(cars.length), label: tr('stat_vehicles') },
+              { icon: 'shield' as const, value: String(brands.length), label: tr('stat_brands') },
+            ]
+          : []),
+        { icon: 'calendar', value: tr('strip_plans'), label: tr('strip_plans_label') },
+        { icon: 'chat', value: tr('whatsapp'), label: tr('strip_wa_label') },
+      ]
 
   return (
     <>
-      {/* ============================================================
-          HERO SECTION with automotive background & quick search
-          ============================================================ */}
-      <HeroCarousel slides={slides} locale={locale}>
-        <div className="hero-search-wrapper">
-          <div className="search-header-badge">
-            <span className="badge-pulse" />
-            <span>{isBn ? 'তাৎক্ষণিক গাড়ি অনুসন্ধান' : 'Find Your Perfect Ride'}</span>
-          </div>
-          <SearchBar
-            locale={locale}
-            services={(services as any[]).map((s) => ({ value: s.slug, label: s.title }))}
-            categories={categoryOptions(locale)}
-            labels={{
-              placeholder: tr('search_placeholder'),
-              service: tr('search_service'),
-              category: tr('search_category'),
-              btn: tr('search_btn'),
-            }}
-          />
-        </div>
-      </HeroCarousel>
-
-      {/* ============================================================
-          TRUST METRICS & STATS BAR
-          ============================================================ */}
-      {h?.stats?.length > 0 && (
-        <section className="stats-bar-wrapper">
-          <div className="container stats-bar">
-            {h.stats.map((stat: any, i: number) => (
-              <div key={i} className="stat-card">
-                <span className="stat-value">{stat.value}</span>
-                <span className="stat-label muted">{stat.label}</span>
-              </div>
-            ))}
+      {home.slides.length > 0 ? (
+        <Hero slides={home.slides} locale={locale} />
+      ) : (
+        <section className="page-hero">
+          <div className="container page-hero-in">
+            <h1>{s.siteName}</h1>
+            <p className="lead">{s.tagline}</p>
           </div>
         </section>
       )}
 
-      {/* ============================================================
-          FEATURED VEHICLES (Cars from CMS)
-          ============================================================ */}
-      <section className="container section">
-        <div className="sec-head">
-          <div>
-            <span className="eyebrow">{isBn ? 'প্রিমিয়াম বহর' : 'HAND-PICKED COLLECTION'}</span>
-            <h2>{tr('featured_fleet')}</h2>
-            <p className="muted lead-sub">{tr('featured_fleet_sub')}</p>
-          </div>
-          <Link className="btn btn-outline" href={`/${locale}/fleet`}>
-            {tr('view_all')} →
-          </Link>
-        </div>
+      <div className="container search-dock">
+        <SearchBar
+          locale={locale}
+          brands={brands}
+          categories={categoryOptions(locale, cars.map((c) => c.category))}
+          services={services.map((x) => ({ value: x.slug, label: x.title }))}
+        />
+      </div>
 
-        <div className="grid g3">
-          {(cars as any[]).map((c) => (
-            <CarCard
-              key={c.id || c.slug}
-              car={c}
-              locale={locale}
-              whatsappNumber={whatsappNumber}
-            />
-          ))}
-        </div>
-
-        <div className="section-bottom-action">
-          <Link className="btn btn-lg btn-gold" href={`/${locale}/fleet`}>
-            {isBn ? 'সকল গাড়ি ও মূল্য তালিকা দেখুন' : 'Explore Entire Fleet & Compare Rates'} →
-          </Link>
-        </div>
-      </section>
-
-      {/* ============================================================
-          SERVICES SECTION
-          ============================================================ */}
-      <section className="container section services-section">
-        <div className="sec-head">
-          <div>
-            <span className="eyebrow">{isBn ? 'আমাদের সেবাসমূহ' : 'COMPREHENSIVE MOBILITY'}</span>
-            <h2>{tr('our_services')}</h2>
-            <p className="muted lead-sub">{tr('our_services_sub')}</p>
-          </div>
-          <Link className="btn btn-outline" href={`/${locale}/services`}>
-            {tr('view_all')} →
-          </Link>
-        </div>
-        <div className="grid g3">
-          {(services as any[]).map((s) => (
-            <ServiceCard key={s.id || s.slug} s={s} locale={locale} />
-          ))}
-        </div>
-      </section>
-
-      {/* ============================================================
-          HOW IT WORKS (4 Simple Steps)
-          ============================================================ */}
-      <section className="how-it-works-bg">
-        <div className="container section">
-          <div className="text-center sec-center-head">
-            <span className="eyebrow">{isBn ? 'সহজ প্রক্রিয়া' : 'SIMPLE 4-STEP BOOKING'}</span>
-            <h2>{tr('how_it_works_title')}</h2>
-            <p className="muted lead-sub">{tr('how_it_works_sub')}</p>
-          </div>
-
-          <div className="how-steps-grid">
-            <div className="how-step-card card">
-              <span className="step-num">{tr('step1_num')}</span>
-              <div className="step-icon">🚗</div>
-              <h3>{tr('step1_title')}</h3>
-              <p className="muted small">{tr('step1_desc')}</p>
+      {fromDay && (
+        <section className="container offer-wrap" aria-label={tr('offer_title')}>
+          <div className="offer">
+            <p className="offer-seal">
+              <span>{tr('offer_badge')}</span>
+              <b>{fromDay}</b>
+              <span>{tr('per_day')}</span>
+            </p>
+            <div className="offer-text">
+              <h2>{tr('offer_title')}</h2>
+              <p>
+                {tr('offer_text')} {fromMonth && <b>{fromMonth} {tr('per_month')}</b>}
+              </p>
+              <small>{tr('fare_note')}</small>
             </div>
-
-            <div className="how-step-card card">
-              <span className="step-num">{tr('step2_num')}</span>
-              <div className="step-icon">💬</div>
-              <h3>{tr('step2_title')}</h3>
-              <p className="muted small">{tr('step2_desc')}</p>
-            </div>
-
-            <div className="how-step-card card">
-              <span className="step-num">{tr('step3_num')}</span>
-              <div className="step-icon">📋</div>
-              <h3>{tr('step3_title')}</h3>
-              <p className="muted small">{tr('step3_desc')}</p>
-            </div>
-
-            <div className="how-step-card card">
-              <span className="step-num">{tr('step4_num')}</span>
-              <div className="step-icon">✨</div>
-              <h3>{tr('step4_title')}</h3>
-              <p className="muted small">{tr('step4_desc')}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================
-          WHY CHOOSE US / ABOUT BAND
-          ============================================================ */}
-      <section className="container section">
-        <div className="about-band">
-          <div className="about-content">
-            <span className="eyebrow">{h?.about?.eyebrow || tr('why_us')}</span>
-            <h2>{h?.about?.title || tr('why_us')}</h2>
-            <p className="lead muted">{h?.about?.text}</p>
-            <div className="about-badges">
-              <div className="about-badge-item">
-                <span className="badge-check">✓</span>
-                <span>{isBn ? '১০+ বছরের ফ্লিট অভিজ্ঞতা' : '10+ Years Fleet Operator'}</span>
-              </div>
-              <div className="about-badge-item">
-                <span className="badge-check">✓</span>
-                <span>{isBn ? 'কোনো গোপন বা অতিরিক্ত চার্জ নেই' : 'No Hidden Fuel or Toll Charges'}</span>
-              </div>
-              <div className="about-badge-item">
-                <span className="badge-check">✓</span>
-                <span>{isBn ? '২৪ ঘণ্টা ব্যাকআপ রিপ্লেসমেন্ট কার' : '24/7 Guaranteed Replacement Car'}</span>
-              </div>
-            </div>
-            <div className="about-cta-row">
-              <a href={waUrl} target="_blank" rel="noreferrer" className="btn btn-wa-card">
-                {tr('whatsapp_chat')}
+            <div className="offer-actions">
+              <Link className="btn btn-gold" href={`/${locale}/fleet?view=table`}>{tr('offer_cta')} <Icon name="arrow" /></Link>
+              <a className="btn btn-outline" href={greetingUrl(s.whatsapp, locale)} target="_blank" rel="noopener noreferrer">
+                <WhatsAppIcon /> {tr('whatsapp')}
               </a>
-              <Link href={`/${locale}/about`} className="btn btn-outline">
-                {tr('nav_about')} →
-              </Link>
             </div>
           </div>
+        </section>
+      )}
 
-          <div className="grid g2 why-cards-grid">
-            {(h?.whyUs || []).map((w: any, i: number) => (
-              <div key={i} className="card why-card">
-                <div className="s-icon why-icon">{w.icon}</div>
-                <h3>{w.title}</h3>
-                <p className="muted small">{w.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+      <section className="container">
+        <ul className="strip">
+          {strip.map((x) => (
+            <li key={x.label}>
+              <Icon name={x.icon} size={40} />
+              <b>{x.value}</b>
+              <span>{x.label}</span>
+            </li>
+          ))}
+        </ul>
       </section>
 
-      {/* ============================================================
-          FACILITIES / COMFORT STANDARDS
-          ============================================================ */}
-      {(facilities as any[]).length > 0 && (
+      {showcase.length > 0 && (
         <section className="container section">
-          <div className="sec-head">
-            <div>
-              <span className="eyebrow">{isBn ? 'আরামদায়ক ভ্রমণ' : 'ONBOARD AMENITIES'}</span>
-              <h2>{tr('facilities_title')}</h2>
-              <p className="muted lead-sub">{tr('facilities_sub')}</p>
-            </div>
-            <Link className="btn btn-outline" href={`/${locale}/facilities`}>
-              {tr('view_all')} →
-            </Link>
+          <SectionHead
+            center
+            eyebrow={tr('featured_eyebrow')}
+            title={tr('featured_title')}
+            text={tr('featured_sub')}
+          />
+          <div className="car-grid is-swipe">
+            {showcase.map((car) => <CarCard key={car.id} car={car} locale={locale} whatsapp={s.whatsapp} />)}
           </div>
-          <div className="grid g3">
-            {(facilities as any[]).slice(0, 6).map((f) => (
-              <FacilityCard key={f.id || f.title} f={f} />
+          <nav className="brand-strip" aria-label={tr('brands_title')}>
+            {brands.map((brand) => {
+              const n = cars.filter((c) => c.brand === brand).length
+              return (
+                <Link key={brand} href={`/${locale}/fleet?brand=${encodeURIComponent(brand)}`}>
+                  <b>{brand}</b>
+                  <small>{n} {tr(n === 1 ? 'vehicle_one' : 'vehicle_many')}</small>
+                </Link>
+              )
+            })}
+          </nav>
+          <p className="center-action">
+            <Link className="btn btn-gold btn-lg" href={`/${locale}/fleet`}>
+              {tr('see_full_fleet')} <Icon name="arrow" />
+            </Link>
+          </p>
+        </section>
+      )}
+
+      {services.length > 0 && (
+        <section className="band">
+          <div className="container section">
+            <SectionHead
+              eyebrow={tr('services_eyebrow')}
+              title={tr('services_title')}
+              text={tr('services_sub')}
+              action={{ href: `/${locale}/services`, label: tr('view_all') }}
+            />
+            <div className="card-grid">
+              {services.map((x) => <ServiceCard key={x.id} service={x} locale={locale} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="container section">
+        <div className="how-panel">
+          <SectionHead eyebrow={tr('how_eyebrow')} title={tr('how_title')} center />
+          <HowItWorks locale={locale} />
+        </div>
+      </section>
+
+      {(home.about.title || home.whyUs.length > 0) && (
+        <section className="container section split">
+          <div data-reveal>
+            <p className="eyebrow">{home.about.eyebrow || tr('why_eyebrow')}</p>
+            <h2>{home.about.title || tr('why_title')}</h2>
+            <p className="section-text">{home.about.text}</p>
+            <Link href={`/${locale}/about`} className="btn btn-outline">{tr('nav_about')} <Icon name="arrow" /></Link>
+          </div>
+          <div className="split-cards">
+            {home.whyUs.map((w) => <FeatureCard key={w.title} item={w} />)}
+          </div>
+        </section>
+      )}
+
+      {facilities.length > 0 && (
+        <section className="band">
+          <div className="container section">
+            <SectionHead
+              eyebrow={tr('facilities_eyebrow')}
+              title={tr('facilities_title')}
+              text={tr('facilities_sub')}
+              action={{ href: `/${locale}/facilities`, label: tr('view_all') }}
+            />
+            <div className="card-grid">
+              {facilities.slice(0, 6).map((f) => <FeatureCard key={f.id} item={f} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {reviews.length > 0 && (
+        <section className="container section">
+          <SectionHead eyebrow={tr('testimonials_eyebrow')} title={tr('testimonials_title')} center />
+          <div className="card-grid">
+            {reviews.slice(0, 3).map((r) => (
+              <figure key={r.id} className="feature-card" data-reveal>
+                <p className="stars" role="img" aria-label={tr('rating_label', { n: r.rating })}>{'★'.repeat(r.rating)}</p>
+                <blockquote>{r.quote}</blockquote>
+                <figcaption className="author">
+                  <span className="avatar" aria-hidden="true">{r.name.charAt(0)}</span>
+                  <span><b>{r.name}</b>{r.role && <small>{r.role}</small>}</span>
+                </figcaption>
+              </figure>
             ))}
           </div>
         </section>
       )}
 
-      {/* ============================================================
-          TESTIMONIALS (CMS Managed)
-          ============================================================ */}
-      {(reviews as any[]).length > 0 && (
-        <section className="testimonials-bg">
-          <div className="container section">
-            <div className="text-center sec-center-head">
-              <span className="eyebrow">{isBn ? 'ক্লায়েন্ট রিভিউ' : 'CLIENT EXPERIENCES'}</span>
-              <h2>{tr('testimonials')}</h2>
-              <p className="muted lead-sub">{tr('testimonials_sub')}</p>
-            </div>
-
-            <div className="grid g3">
-              {(reviews as any[]).slice(0, 3).map((r) => (
-                <figure key={r.id || r.name} className="card quote">
-                  <div className="stars">
-                    {'★'.repeat(r.rating || 5)}
-                    <span className="rating-badge">5.0</span>
-                  </div>
-                  <blockquote>“{r.quote}”</blockquote>
-                  <figcaption className="quote-author">
-                    <div className="author-avatar">{r.name.charAt(0)}</div>
-                    <div>
-                      <b>{r.name}</b>
-                      <span className="muted small">{r.role}</span>
-                    </div>
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ============================================================
-          CALL TO ACTION (Instant Quote & WhatsApp)
-          ============================================================ */}
-      <section className="container section">
-        <div className="cta-luxury-card">
-          <div className="cta-content">
-            <span className="cta-chip">24/7 CONCIERGE HOTLINE</span>
-            <h2>{tr('cta_title')}</h2>
-            <p className="cta-lead">{tr('cta_text')}</p>
-            <div className="cta-actions">
-              <Link className="btn btn-lg btn-light" href={`/${locale}/contact`}>
-                {tr('book_now')} →
-              </Link>
-              <a
-                href={waUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-lg btn-wa-cta"
-              >
-                💬 {tr('whatsapp_chat')}
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+      <CtaBand locale={locale} s={s} />
     </>
   )
 }

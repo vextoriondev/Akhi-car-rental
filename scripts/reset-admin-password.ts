@@ -12,8 +12,8 @@ loadEnv({ path: '.env.local' })
 loadEnv()
 
 async function resetPassword() {
-  const email = (process.env.ADMIN_EMAIL || process.env.SEED_ADMIN_EMAIL || 'admin@akhicarrental.com').trim().toLowerCase()
-  const newPassword = process.env.NEW_PASSWORD || process.env.SEED_ADMIN_PASSWORD || 'AkhiRentalAdmin2026!'
+  const email = (process.env.ADMIN_EMAIL || process.env.SEED_ADMIN_EMAIL || '').trim().toLowerCase()
+  const newPassword = process.env.NEW_PASSWORD || ''
 
   if (!email || !newPassword) {
     console.error('❌ Missing arguments: Set ADMIN_EMAIL and NEW_PASSWORD in environment variables.')
@@ -21,8 +21,8 @@ async function resetPassword() {
     process.exit(1)
   }
 
-  if (newPassword.length < 8) {
-    console.error('❌ Password must be at least 8 characters long.')
+  if (newPassword.length < 12) {
+    console.error('❌ Password must be at least 12 characters long.')
     process.exit(1)
   }
 

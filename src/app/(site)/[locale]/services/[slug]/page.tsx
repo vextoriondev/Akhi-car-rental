@@ -1,125 +1,88 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import type { Metadata } from 'next'
-import { CarCard } from '@/components/Cards'
+import { CarCard } from '@/components/CarCard'
 import { InquiryForm } from '@/components/InquiryForm'
-import { formLabels, formOptions } from '@/lib/form'
-import { getCars, getService, getSettings } from '@/lib/payload'
-import { buildWhatsAppUrl, t, type Locale } from '@/lib/i18n'
+import { PageHero, SectionHead } from '@/components/Blocks'
+import { Icon, WhatsAppIcon } from '@/components/Icons'
+import { getCars, getService, getSettings } from '@/lib/data'
+import { inquiryOptions } from '@/lib/inquiry-options'
+import { t, toLocale } from '@/lib/i18n'
+import { greetingUrl } from '@/lib/format'
+import { pageMetadata } from '@/lib/seo'
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: Locale; slug: string }>
-}): Promise<Metadata> {
-  const { locale, slug } = await params
-  const s: any = await getService(locale, slug)
-  return { title: s?.title ?? 'Service' }
+type Props = { params: Promise<{ locale: string; slug: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug, ...rest } = await params
+  const locale = toLocale(rest.locale)
+  const [service, s] = await Promise.all([getService(locale, slug), getSettings(locale)])
+  if (!service) notFound()
+  return pageMetadata({
+    locale,
+    path: `/services/${service.slug}`,
+    title: service.title,
+    description: service.summary,
+    image: service.photo?.url,
+    siteName: s.siteName,
+  })
 }
 
-export default async function ServiceDetailPage({
-  params,
-}: {
-  params: Promise<{ locale: Locale; slug: string }>
-}) {
-  const { locale, slug } = await params
-  const s: any = await getService(locale, slug)
-  if (!s) notFound()
-
+export default async function ServicePage({ params }: Props) {
+  const { slug, ...rest } = await params
+  const locale = toLocale(rest.locale)
   const tr = t(locale)
-  const isBn = locale === 'bn'
-  const [cars, opts, settings]: any = await Promise.all([
-    getCars(locale, { serviceId: s.id, limit: 6 }),
-    formOptions(locale),
-    getSettings(locale),
-  ])
-
-  const wa = settings?.whatsapp || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '8801625347735'
-  const waUrl = buildWhatsAppUrl({ phone: wa, locale })
+  const service = await getService(locale, slug)
+  if (!service) notFound()
+  const [cars, options, s] = await Promise.all([getCars(locale), inquiryOptions(locale), getSettings(locale)])
+  const matching = cars.filter((c) => c.serviceSlugs.includes(service.slug))
+  // Photographed vehicles first, otherwise keeping the CMS order.
+  const shown = [...matching].sort((a, b) => Number(!a.photo) - Number(!b.photo)).slice(0, 6)
 
   return (
-    <div className={`container page service-detail-page a-${s.accent || 'gold'}`}>
-      <Link className="crumb-back-link" href={`/${locale}/services`}>
-        ← {isBn ? 'সকল সার্ভিসে ফিরে যান' : 'Back to Services'}
-      </Link>
-
-      <div className="svc-hero card p-8 my-6">
-        <div className="s-icon big">{s.icon || '🚗'}</div>
-        <div className="svc-hero-text">
-          <span className="eyebrow">{isBn ? 'বিশেষায়িত প্যাকেজ' : 'SPECIALIZED SERVICE'}</span>
-          <h1>{s.title}</h1>
-          <p className="lead muted">{s.summary}</p>
-          {s.startingPrice && (
-            <div className="svc-price-pill">
-              <span className="muted small">{isBn ? 'শুরু' : 'Rates'}</span>
-              <b>{s.startingPrice}</b>
-            </div>
-          )}
-        </div>
-        <div className="svc-hero-action">
-          <a href={waUrl} target="_blank" rel="noreferrer" className="btn btn-wa-card">
-            💬 {tr('whatsapp_chat')}
+    <>
+      <PageHero eyebrow={tr('services_eyebrow')} title={service.title} text={service.summary} photo={service.photo}>
+        <div className="hero-buttons">
+          <a className="btn btn-gold" href="#reserve">{tr('inquiry_title')}</a>
+          <a className="btn btn-wa" href={greetingUrl(s.whatsapp, locale)} target="_blank" rel="noopener noreferrer">
+            <WhatsAppIcon /> {tr('whatsapp_chat')}
           </a>
         </div>
-      </div>
+      </PageHero>
 
-      {s.description && (
-        <div className="card p-6 my-6">
-          <h3 className="section-subheading">{isBn ? 'সার্ভিসের পূর্ণ বিবরণ' : 'Service Overview'}</h3>
-          <p className="prose muted">{s.description}</p>
+      <section className="container section split">
+        <div>
+          <Link className="text-link" href={`/${locale}/services`}><Icon name="back" /> {tr('back_services')}</Link>
+          <h2>{tr('service_overview')}</h2>
+          <p className="muted prose">{service.description || service.summary}</p>
+          {service.startingPrice && <p className="service-price">{service.startingPrice}</p>}
         </div>
-      )}
-
-      {s.highlights?.length > 0 && (
-        <div className="my-8">
-          <h3 className="section-subheading">{tr('highlights')}</h3>
-          <ul className="ticks">
-            {s.highlights.map((h: any, i: number) => (
-              <li key={i}>{h.label}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {(cars as any[]).length > 0 && (
-        <section className="service-cars-section section">
-          <div className="sec-head">
-            <div>
-              <span className="eyebrow">{isBn ? 'উপযুক্ত বহর' : 'MATCHING VEHICLES'}</span>
-              <h2>{tr('cars_for_service')}</h2>
-            </div>
-            <Link className="link" href={`/${locale}/fleet`}>
-              {tr('view_all')} →
-            </Link>
+        {service.highlights.length > 0 && (
+          <div className="note">
+            <h2>{tr('highlights')}</h2>
+            <ul className="ticks">
+              {service.highlights.map((h) => <li key={h}><Icon name="check" /> {h}</li>)}
+            </ul>
           </div>
-          <div className="grid g3">
-            {(cars as any[]).map((c) => (
-              <CarCard
-                key={c.id || c.slug}
-                car={c}
-                locale={locale}
-                whatsappNumber={wa}
-              />
-            ))}
+        )}
+      </section>
+
+      {shown.length > 0 && (
+        <section className="container section">
+          <SectionHead
+            title={tr('service_cars')}
+            action={{ href: `/${locale}/fleet?service=${service.slug}`, label: `${tr('view_all')} (${matching.length})` }}
+          />
+          <div className="car-grid">
+            {shown.map((c) => <CarCard key={c.id} car={c} locale={locale} whatsapp={s.whatsapp} />)}
           </div>
         </section>
       )}
 
-      <div className="service-inquiry-section my-8">
-        <div className="sec-head">
-          <div>
-            <span className="eyebrow">{isBn ? 'বুকিং' : 'RESERVATION'}</span>
-            <h2>{tr('inquiry_title')}</h2>
-          </div>
-        </div>
-        <InquiryForm
-          services={opts.services}
-          cars={opts.cars}
-          defaultService={String(s.id)}
-          whatsapp={wa}
-          labels={formLabels(tr)}
-        />
-      </div>
-    </div>
+      <section id="reserve" className="container section reserve">
+        <SectionHead eyebrow={tr('reserve_eyebrow')} title={tr('inquiry_title')} center />
+        <InquiryForm locale={locale} {...options} whatsapp={s.whatsapp} defaultService={String(service.id)} />
+      </section>
+    </>
   )
 }

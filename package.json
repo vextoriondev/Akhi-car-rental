@@ -8,11 +8,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/test-site.mjs",
+    "test:cms": "tsx scripts/test-cms.ts",
+    "seed": "tsx scripts/import-content.ts",
+    "db:migrate": "payload migrate",
+    "db:migrate:create": "payload migrate:create",
     "generate:importmap": "payload generate:importmap",
     "generate:types": "payload generate:types",
     "admin:bootstrap": "tsx scripts/bootstrap-admin.ts",
     "admin:reset-password": "tsx scripts/reset-admin-password.ts",
-    "seed": "tsx scripts/seed.ts",
     "payload": "payload"
   },
   "dependencies": {

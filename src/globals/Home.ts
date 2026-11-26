@@ -1,4 +1,6 @@
 import type { GlobalConfig } from 'payload'
+import { isLoggedIn } from '../server/access'
+import { globalContentHooks } from '../server/revalidate'
 
 const themeOptions = ['gold', 'violet', 'pink', 'amber', 'cyan', 'lime', 'orange']
 
@@ -7,8 +9,9 @@ export const Home: GlobalConfig = {
   label: 'Home Page',
   access: {
     read: () => true,
-    update: ({ req }) => Boolean(req.user),
+    update: isLoggedIn,
   },
+  hooks: globalContentHooks,
   fields: [
     {
       name: 'slides',

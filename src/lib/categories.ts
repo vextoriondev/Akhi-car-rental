@@ -1,29 +1,19 @@
 import type { Locale } from './i18n'
 
-const en: Record<string, string> = {
-  economy: 'Economy',
-  sedan: 'Sedan',
-  suv: 'SUV / Jeep',
-  microbus: 'Microbus / Van',
-  luxury: 'Luxury',
-  pickup: 'Pickup',
-  bus: 'Bus / Coaster',
+const labels: Record<string, Record<Locale, string>> = {
+  economy: { en: 'Economy', bn: 'ইকোনমি' },
+  sedan: { en: 'Sedan', bn: 'সেডান' },
+  suv: { en: 'SUV / Jeep', bn: 'এসইউভি / জিপ' },
+  microbus: { en: 'Microbus / Van', bn: 'মাইক্রোবাস / ভ্যান' },
+  luxury: { en: 'Luxury', bn: 'লাক্সারি' },
+  pickup: { en: 'Pickup', bn: 'পিকআপ' },
+  bus: { en: 'Bus / Coaster', bn: 'বাস / কোস্টার' },
 }
 
-const bn: Record<string, string> = {
-  economy: 'ইকোনমি',
-  sedan: 'সেডান',
-  suv: 'এসইউভি / জিপ',
-  microbus: 'মাইক্রোবাস / ভ্যান',
-  luxury: 'লাক্সারি',
-  pickup: 'পিকআপ',
-  bus: 'বাস / কোস্টার',
-}
+export const getCategoryLabel = (category: string, locale: Locale) => labels[category]?.[locale] ?? category
 
-export const categoryOptions = (locale: Locale) =>
-  Object.entries(locale === 'bn' ? bn : en).map(([value, label]) => ({ value, label }))
-
-export const getCategoryLabel = (category: string, locale: Locale) => {
-  const dict = locale === 'bn' ? bn : en
-  return dict[category] || category
-}
+/** Only the categories that actually have vehicles, in the order defined above. */
+export const categoryOptions = (locale: Locale, present: string[]) =>
+  Object.keys(labels)
+    .filter((value) => present.includes(value))
+    .map((value) => ({ value, label: labels[value][locale] }))

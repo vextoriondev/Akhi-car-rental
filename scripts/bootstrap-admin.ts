@@ -10,12 +10,12 @@ loadEnv({ path: '.env.local' })
 loadEnv()
 
 async function bootstrapAdmin() {
-  const email = (process.env.SEED_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@akhicarrental.com').trim().toLowerCase()
-  const password = process.env.SEED_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || 'AkhiRentalAdmin2026!'
+  const email = (process.env.SEED_ADMIN_EMAIL || process.env.ADMIN_EMAIL || '').trim().toLowerCase()
+  const password = process.env.SEED_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || ''
   const name = process.env.SEED_ADMIN_NAME || process.env.ADMIN_NAME || 'Akhi Super Admin'
 
-  if (password.length < 8) {
-    console.error('❌ Password must be at least 8 characters long for production security.')
+  if (!email || password.length < 12) {
+    console.error('❌ Set SEED_ADMIN_EMAIL and a SEED_ADMIN_PASSWORD of at least 12 characters.')
     process.exit(1)
   }
 
@@ -45,7 +45,6 @@ async function bootstrapAdmin() {
       })
       console.log(`✅ Admin user [${email}] updated with new password and role superadmin!`)
       console.log(`   Email: ${email}`)
-      console.log(`   Password: ${password}`)
       console.log(`   Role: superadmin`)
       console.log(`   Admin Panel: http://localhost:3000/admin (or /admin on production)`)
       process.exit(0)
@@ -67,7 +66,6 @@ async function bootstrapAdmin() {
 
     console.log(`✅ Super Admin created successfully!`)
     console.log(`   Email: ${user.email}`)
-    console.log(`   Password: ${password}`)
     console.log(`   Role: ${user.role}`)
     console.log(`   Database ID: ${user.id}`)
     console.log(`   Total Users in Database: ${totalUsers.totalDocs + 1}`)

@@ -140,11 +140,11 @@ export interface UserAuthOperations {
 export interface Car {
   id: number;
   /**
-   * Vehicle name (e.g., Toyota Noah, Toyota Prado, Hiace Super GL)
+   * Vehicle name without the year, e.g. Toyota X-Noah
    */
   name: string;
   /**
-   * URL slug, e.g. toyota-noah-2022
+   * Web address. Leave empty to create it from the name and model year.
    */
   slug: string;
   /**
@@ -175,27 +175,27 @@ export interface Car {
    */
   color?: string | null;
   /**
-   * BDT per day (leave blank for On Request or monthly-only vehicles)
+   * Leave empty to hide. With both fares empty the site shows "Price on Request".
    */
   pricePerDay?: number | null;
   /**
-   * BDT per month (leave blank for On Request or daily-only vehicles)
+   * Leave empty for daily-only vehicles.
    */
   pricePerMonth?: number | null;
   status?: ('published' | 'draft') | null;
+  /**
+   * Untick to show the vehicle as "Booked".
+   */
   available?: boolean | null;
   featured?: boolean | null;
   withDriver?: boolean | null;
   /**
-   * Display priority (lower numbers appear first)
+   * Lower numbers appear first
    */
   order?: number | null;
-  /**
-   * Accent tone styling used on card badges and glows
-   */
   accent?: ('gold' | 'violet' | 'pink' | 'amber' | 'cyan' | 'lime' | 'orange') | null;
   /**
-   * Main hero photo of the vehicle
+   * Without a photo the site shows "Photos on request".
    */
   image?: (number | null) | Media;
   /**
@@ -212,7 +212,7 @@ export interface Car {
    */
   description?: string | null;
   /**
-   * Key amenities (e.g. Dual AC, Push Start, Leather Seats, Android Audio)
+   * Confirmed amenities only
    */
   features?:
     | {
@@ -805,6 +805,9 @@ export interface SiteSetting {
    */
   email?: string | null;
   address?: string | null;
+  /**
+   * Opening hours. Hidden on the website while empty.
+   */
   hours?: string | null;
   socials?: {
     facebook?: string | null;

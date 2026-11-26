@@ -1,285 +1,188 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import type { Metadata } from 'next'
-import { CarDetailGallery } from '@/components/CarDetailGallery'
-import { CarCard } from '@/components/Cards'
+import { Gallery } from '@/components/Gallery'
+import { CarCard, Fares, NoPhoto } from '@/components/CarCard'
 import { InquiryForm } from '@/components/InquiryForm'
-import { formLabels, formOptions } from '@/lib/form'
-import { getCar, getSimilarCars, getSettings, mediaUrl } from '@/lib/payload'
-import { buildWhatsAppUrl, t, type Locale } from '@/lib/i18n'
+import { SectionHead } from '@/components/Blocks'
+import { Icon, WhatsAppIcon, type IconName } from '@/components/Icons'
+import { JsonLd } from '@/components/JsonLd'
+import { getCar, getSettings, getSimilarCars } from '@/lib/data'
+import { inquiryOptions } from '@/lib/inquiry-options'
+import { t, toLocale } from '@/lib/i18n'
 import { getCategoryLabel } from '@/lib/categories'
+import { carTitle, carWhatsAppUrl, fuelLabel, money } from '@/lib/format'
+import { SITE_URL, telHref } from '@/lib/site'
+import { pageMetadata } from '@/lib/seo'
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: Locale; slug: string }>
-}): Promise<Metadata> {
-  const { locale, slug } = await params
-  const car: any = await getCar(locale, slug)
-  if (!car) return { title: 'Vehicle Not Found' }
-  const isBn = locale === 'bn'
-  return {
-    title: `${car.name} (${car.yearRange || car.year || ''})`,
-    description:
-      car.description ||
-      (isBn
-        ? `${car.name} ভাড়া নিন আখি কার রেন্টাল থেকে। সেরা মূল্যে পেশাদার ড্রাইভারসহ দৈনিক ও মাসিক রেন্টাল।`
-        : `Rent ${car.name} in Dhaka with verified chauffeur. Daily & monthly packages from Akhi Car Rental.`),
-  }
+type Props = { params: Promise<{ locale: string; slug: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug, ...rest } = await params
+  const locale = toLocale(rest.locale)
+  const tr = t(locale)
+  const [car, s] = await Promise.all([getCar(locale, slug), getSettings(locale)])
+  if (!car) notFound()
+  const fares = [
+    car.pricePerDay ? `${tr('daily_fare')} ${money(car.pricePerDay)}` : '',
+    car.pricePerMonth ? `${tr('monthly_fare')} ${money(car.pricePerMonth)}` : '',
+  ].filter(Boolean)
+  return pageMetadata({
+    locale,
+    path: `/fleet/${car.slug}`,
+    title: carTitle(car),
+    description: [car.description, ...fares].filter(Boolean).join(' · ') || carTitle(car),
+    image: car.photo?.url,
+    siteName: s.siteName,
+  })
 }
 
-export default async function CarDetailPage({
-  params,
-}: {
-  params: Promise<{ locale: Locale; slug: string }>
-}) {
-  const { locale, slug } = await params
-  const car: any = await getCar(locale, slug)
-  if (!car) notFound()
-
+export default async function CarPage({ params }: Props) {
+  const { slug, ...rest } = await params
+  const locale = toLocale(rest.locale)
   const tr = t(locale)
-  const isBn = locale === 'bn'
-  const categoryLabel = getCategoryLabel(car.category || 'sedan', locale)
-  const yearText = car.yearRange || car.year || ''
-
-  const [formOpts, similarCars, settings]: any = await Promise.all([
-    formOptions(locale),
-    getSimilarCars(locale, car.category, car.slug),
+  const car = await getCar(locale, slug)
+  if (!car) notFound()
+  const [similar, options, s] = await Promise.all([
+    getSimilarCars(locale, car),
+    inquiryOptions(locale),
     getSettings(locale),
   ])
+  const category = getCategoryLabel(car.category, locale)
+  const waUrl = carWhatsAppUrl(s.whatsapp, car, locale)
 
-  const whatsappNumber = settings?.whatsapp || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '8801625347735'
-  const waUrl = buildWhatsAppUrl({
-    phone: whatsappNumber,
-    carName: car.name,
-    yearOrRange: yearText,
-    category: categoryLabel,
-    locale,
-  })
+  const specs = ([
+    ['seat', tr('seats_label'), String(car.seats)],
+    ['calendar', tr('model_year'), car.years],
+    ['bag', tr('bags'), car.luggage ? String(car.luggage) : ''],
+    ['gear', tr('gearbox'), car.transmission ? tr(car.transmission === 'manual' ? 'manual' : 'auto') : ''],
+    ['fuel', tr('fuel'), car.fuel ? fuelLabel(car.fuel, tr) : ''],
+    ['palette', tr('color'), car.color ?? ''],
+    ['wheel', tr('driver_label'), tr(car.withDriver ? 'with_driver' : 'self_drive')],
+  ] as [IconName, string, string][]).filter(([, , value]) => value)
 
-  // Extract images
-  const imgs: string[] = [car.image, ...(car.gallery || []).map((g: any) => g.image)]
-    .map(mediaUrl)
-    .filter(Boolean) as string[]
-
-  const hasDaily = typeof car.pricePerDay === 'number' && car.pricePerDay > 0
-  const hasMonthly = typeof car.pricePerMonth === 'number' && car.pricePerMonth > 0
+  const offers = [
+    car.pricePerDay && { price: car.pricePerDay, unitText: 'DAY' },
+    car.pricePerMonth && { price: car.pricePerMonth, unitText: 'MONTH' },
+  ].filter(Boolean) as { price: number; unitText: string }[]
 
   return (
-    <div className={`container page car-detail-page a-${car.accent || 'gold'}`}>
-      {/* Breadcrumb Navigation */}
-      <nav className="detail-breadcrumbs" aria-label="Breadcrumb">
-        <Link href={`/${locale}`} className="crumb-link">
-          {tr('nav_home')}
-        </Link>
-        <span className="crumb-sep">/</span>
-        <Link href={`/${locale}/fleet`} className="crumb-link">
-          {tr('nav_fleet')}
-        </Link>
-        <span className="crumb-sep">/</span>
-        <span className="crumb-current">{car.name}</span>
+    <div className="container detail">
+      <nav className="breadcrumbs" aria-label={tr('breadcrumb')}>
+        <ol>
+          <li><Link href={`/${locale}`}>{tr('nav_home')}</Link></li>
+          <li><Link href={`/${locale}/fleet`}>{tr('nav_fleet')}</Link></li>
+          <li aria-current="page">{carTitle(car)}</li>
+        </ol>
       </nav>
 
-      {/* Main Detail Grid: Left (Gallery) & Right (Vehicle Info & Booking) */}
-      <div className="detail-layout">
-        {/* Left: Gallery */}
-        <div className="detail-gallery-column">
-          <CarDetailGallery images={imgs} carName={car.name} accent={car.accent || 'gold'} />
+      <div className="detail-grid">
+        <div className="detail-media">
+          {car.gallery.length ? (
+            <Gallery photos={car.gallery} locale={locale} />
+          ) : (
+            <div className="gallery-stage"><NoPhoto brand={car.brand} label={tr('photo_on_request')} /></div>
+          )}
         </div>
 
-        {/* Right: Info & Pricing */}
-        <div className="detail-info-column">
-          <div className="detail-header-badges">
-            <span className="chip chip-cat">{categoryLabel}</span>
-            {car.available === false ? (
-              <span className="chip chip-off">{tr('unavailable')}</span>
-            ) : (
-              <span className="chip chip-available">
-                <span className="pulse-dot" />
-                {tr('available')}
-              </span>
-            )}
-            {yearText && <span className="chip chip-year">{yearText}</span>}
+        <div className="detail-info">
+          <div className="detail-tags">
+            <span className="tag">{category}</span>
+            <span className={`tag ${car.available ? 'tag-ok' : 'tag-off'}`}>
+              {car.available ? tr('available') : tr('unavailable')}
+            </span>
           </div>
+          <p className="car-brand">{car.brand}{car.years && <span>{car.years}</span>}</p>
+          <h1>{car.name}</h1>
 
-          <h1 className="detail-car-title">{car.name}</h1>
-          <p className="detail-car-brand muted">{car.brand || 'Automotive'}</p>
-
-          {/* Pricing Highlight Card */}
-          <div className="detail-price-card">
-            <div className="detail-price-grid">
-              {hasDaily && (
-                <div className="detail-price-item">
-                  <span className="muted small">{isBn ? 'দৈনিক রেট' : 'Daily Rental'}</span>
-                  <div className="detail-price-val">
-                    <b>৳{car.pricePerDay.toLocaleString('en-US')}</b>
-                    <span className="muted small">{tr('per_day')}</span>
-                  </div>
-                </div>
-              )}
-
-              {hasMonthly && (
-                <div className="detail-price-item">
-                  <span className="muted small">{isBn ? 'মাসিক প্যাকেজ' : 'Monthly Dedicated'}</span>
-                  <div className="detail-price-val">
-                    <b>৳{car.pricePerMonth.toLocaleString('en-US')}</b>
-                    <span className="muted small">{tr('per_month')}</span>
-                  </div>
-                </div>
-              )}
-
-              {!hasDaily && hasMonthly && (
-                <div className="detail-price-item">
-                  <span className="price-notice-pill">{tr('monthly_only')}</span>
-                </div>
-              )}
-
-              {hasDaily && !hasMonthly && (
-                <div className="detail-price-item">
-                  <span className="price-notice-pill">{tr('daily_only')}</span>
-                </div>
-              )}
-
-              {!hasDaily && !hasMonthly && (
-                <div className="detail-price-item">
-                  <span className="muted small">{isBn ? 'ভাড়ার পরিমাণ' : 'Rental Rates'}</span>
-                  <div className="detail-price-val">
-                    <b>{tr('price_on_request')}</b>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Direct WhatsApp Callout */}
-            <div className="detail-wa-action">
-              <a href={waUrl} target="_blank" rel="noreferrer" className="btn btn-wa-block">
-                <svg viewBox="0 0 32 32" width="20" height="20" fill="currentColor" aria-hidden>
-                  <path d="M16 3C9 3 3.3 8.6 3.3 15.5c0 2.3.6 4.4 1.7 6.3L3 29l7.4-1.9c1.8 1 3.8 1.5 5.6 1.5 7 0 12.7-5.6 12.7-12.5S23 3 16 3zm0 22.7c-1.8 0-3.6-.5-5.1-1.4l-.4-.2-4.4 1.1 1.2-4.2-.3-.4a10 10 0 0 1-1.6-5.4C5.4 9.9 10.1 5.3 16 5.3S26.6 9.9 26.6 15.5 21.9 25.7 16 25.7zm5.8-7.5c-.3-.2-1.9-.9-2.2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1a8.4 8.4 0 0 1-4.2-3.6c-.3-.5.3-.5.9-1.6.1-.2 0-.4 0-.5l-1-2.3c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4s-1.1 1.1-1.1 2.6 1.1 3 1.3 3.2 2.2 3.4 5.4 4.7c2 .8 2.8.9 3.8.7.6-.1 1.9-.8 2.2-1.5s.3-1.4.2-1.5-.3-.2-.6-.4z" />
-                </svg>
-                <span>{tr('book_whatsapp')}</span>
+          <div className="price-panel">
+            <Fares car={car} locale={locale} />
+            {car.pricePerDay && <p className="muted small">{tr('fare_note')}</p>}
+            <div className="price-actions">
+              <a className="btn btn-wa btn-lg" href={waUrl} target="_blank" rel="noopener noreferrer">
+                <WhatsAppIcon /> {tr('book_whatsapp')}
               </a>
+              <a className="btn btn-gold btn-lg" href="#reserve">{tr('inquiry_title')}</a>
             </div>
+            <a className="text-link" href={telHref(s.phone)}><Icon name="phone" /> {s.phone}</a>
           </div>
 
-          {/* Key Specs Grid */}
-          <div className="detail-specs-section">
-            <h3 className="section-subheading">{isBn ? 'গাড়ির স্পেসিফিকেশন' : 'Technical Specifications'}</h3>
-            <ul className="detail-specs-grid">
-              <li>
-                <span className="spec-label muted">{tr('seats')}</span>
-                <strong className="spec-value">👥 {car.seats || 4} Passengers</strong>
-              </li>
-              <li>
-                <span className="spec-label muted">{tr('bags')}</span>
-                <strong className="spec-value">🧳 {car.luggage ?? 2} Luggage Bags</strong>
-              </li>
-              <li>
-                <span className="spec-label muted">{tr('gearbox')}</span>
-                <strong className="spec-value">⚙️ {car.transmission === 'manual' ? tr('manual') : tr('auto')}</strong>
-              </li>
-              <li>
-                <span className="spec-label muted">{tr('fuel')}</span>
-                <strong className="spec-value">⛽ {car.fuel || 'Octane'}</strong>
-              </li>
-              {yearText && (
-                <li>
-                  <span className="spec-label muted">{tr('year')}</span>
-                  <strong className="spec-value">📅 {yearText}</strong>
-                </li>
-              )}
-              {car.color && (
-                <li>
-                  <span className="spec-label muted">{isBn ? 'রং' : 'Color'}</span>
-                  <strong className="spec-value">🎨 {car.color}</strong>
-                </li>
-              )}
-              <li>
-                <span className="spec-label muted">{isBn ? 'ড্রাইভার সুবিধা' : 'Driver Service'}</span>
-                <strong className="spec-value">👨‍✈️ {car.withDriver !== false ? tr('with_driver') : tr('self_drive')}</strong>
-              </li>
-            </ul>
-          </div>
-
-          {/* Description */}
-          {car.description && (
-            <div className="detail-desc-section">
-              <h3 className="section-subheading">{isBn ? 'গাড়ির বিবরণ' : 'Vehicle Description'}</h3>
-              <p className="detail-desc-text prose muted">{car.description}</p>
-            </div>
-          )}
-
-          {/* Features Checklist */}
-          {car.features && car.features.length > 0 && (
-            <div className="detail-features-section">
-              <h3 className="section-subheading">{tr('features')}</h3>
-              <div className="detail-features-pills">
-                {car.features.map((f: any, i: number) => (
-                  <span key={i} className="feature-pill">
-                    ✓ {f.label}
-                  </span>
-                ))}
+          <h2 className="subheading">{tr('specs_title')}</h2>
+          <dl className="spec-grid">
+            {specs.map(([icon, label, value]) => (
+              <div key={label}>
+                <dt><Icon name={icon} /> {label}</dt>
+                <dd>{value}</dd>
               </div>
-            </div>
+            ))}
+          </dl>
+
+          {car.description && (
+            <>
+              <h2 className="subheading">{tr('about_vehicle')}</h2>
+              <p className="muted prose">{car.description}</p>
+            </>
           )}
 
-          {/* Booking Terms Callout */}
-          <div className="booking-terms-box card">
-            <h4>📋 {isBn ? 'বুকিং ও ভাড়ার তথ্যাদি' : 'Booking Terms & Inclusions'}</h4>
-            <ul className="terms-list small muted">
-              <li>• {isBn ? 'অভিজ্ঞ ও ইউনিফর্মধারী পেশাদার ড্রাইভার অন্তর্ভুক্ত' : 'Professional, verified chauffeur included'}</li>
-              <li>• {isBn ? 'জ্বালানি (তেল/গ্যাস) আলোচনা সাপেক্ষে নির্ধারিত হয়' : 'Fuel costs arranged based on route & trip duration'}</li>
-              <li>• {isBn ? 'ব্রিজ টোল ও পার্কিং ফি গ্রাহক বহন করবেন' : 'Bridge tolls & parking fees payable on actuals'}</li>
-              <li>• {isBn ? 'সার্ভিসিং বা যেকোনো জরুরি প্রয়োজনে ব্যাকআপ রিপ্লেসমেন্ট কার' : 'Immediate backup vehicle provided if needed'}</li>
-            </ul>
+          {car.features.length > 0 && (
+            <>
+              <h2 className="subheading">{tr('features_title')}</h2>
+              <ul className="ticks">
+                {car.features.map((f) => <li key={f}><Icon name="check" /> {f}</li>)}
+              </ul>
+            </>
+          )}
+
+          <div className="note">
+            <h2>{tr('terms_title')}</h2>
+            <p>{tr('terms_confirm')}</p>
           </div>
         </div>
       </div>
 
-      {/* Booking Inquiry Form */}
-      <section className="detail-inquiry-section">
-        <div className="inquiry-header text-center">
-          <span className="eyebrow">{isBn ? 'অনলাইন কোটেশন' : 'INSTANT RESERVATION'}</span>
-          <h2>{tr('inquiry_title')}</h2>
-          <p className="muted lead-sub">
-            {isBn
-              ? `"${car.name}" বুকিংয়ের জন্য নিচের ফর্মটি পূরণ করুন বা হোয়াটসঅ্যাপে কথা বলুন।`
-              : `Submit your itinerary for "${car.name}" and our fleet manager will confirm rates within 15 minutes.`}
-          </p>
-        </div>
-
+      <section id="reserve" className="section reserve">
+        <SectionHead eyebrow={tr('reserve_eyebrow')} title={tr('reserve_title')} text={tr('reserve_sub')} center />
         <InquiryForm
-          services={formOpts.services}
-          cars={formOpts.cars}
+          locale={locale}
+          {...options}
+          whatsapp={s.whatsapp}
           defaultCar={String(car.id)}
-          whatsapp={whatsappNumber}
-          labels={formLabels(tr)}
         />
       </section>
 
-      {/* Similar Vehicles in Fleet */}
-      {similarCars && similarCars.length > 0 && (
-        <section className="similar-cars-section section">
-          <div className="sec-head">
-            <div>
-              <span className="eyebrow">{categoryLabel}</span>
-              <h2>{tr('similar_vehicles')}</h2>
-            </div>
-            <Link className="link" href={`/${locale}/fleet?category=${car.category}`}>
-              {tr('view_all')} →
-            </Link>
-          </div>
-          <div className="grid g3">
-            {similarCars.map((simCar: any) => (
-              <CarCard
-                key={simCar.id || simCar.slug}
-                car={simCar}
-                locale={locale}
-                whatsappNumber={whatsappNumber}
-              />
-            ))}
+      {similar.length > 0 && (
+        <section className="section">
+          <SectionHead title={tr('similar_title')} action={{ href: `/${locale}/fleet`, label: tr('view_all') }} />
+          <div className="car-grid">
+            {similar.map((c) => <CarCard key={c.id} car={c} locale={locale} whatsapp={s.whatsapp} />)}
           </div>
         </section>
       )}
+
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: carTitle(car),
+          brand: { '@type': 'Brand', name: car.brand },
+          category,
+          description: car.description || undefined,
+          image: car.gallery.map((p) => new URL(p.url, SITE_URL).href),
+          url: `${SITE_URL}/${locale}/fleet/${car.slug}`,
+          ...(offers.length
+            ? {
+                offers: offers.map((o) => ({
+                  '@type': 'Offer',
+                  priceCurrency: 'BDT',
+                  price: o.price,
+                  businessFunction: 'http://purl.org/goodrelations/v1#LeaseOut',
+                  priceSpecification: { '@type': 'UnitPriceSpecification', price: o.price, priceCurrency: 'BDT', unitText: o.unitText },
+                  availability: car.available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                })),
+              }
+            : {}),
+        }}
+      />
     </div>
   )
 }

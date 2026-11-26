@@ -1,7 +1,6 @@
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { buildConfig } from 'payload'
-import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { vercelPostgresAdapter } from '@payloadcms/db-vercel-postgres'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import sharp from 'sharp'
@@ -27,12 +26,17 @@ const hasDb = Boolean(
     dbUrl.trim() !== '',
 )
 
+const secret = process.env.PAYLOAD_SECRET || ''
+if (process.env.NODE_ENV === 'production' && hasDb && (!secret || secret === 'change-me')) {
+  throw new Error('PAYLOAD_SECRET must be set to a long random value in production.')
+}
+
 export default buildConfig({
-  serverURL: process.env.NEXT_PUBLIC_SITE_URL || undefined,
+  // No serverURL on purpose: relative API and media URLs work on any host or port.
   admin: {
     user: Users.slug,
     importMap: { baseDir: path.resolve(dirname) },
-    meta: { titleSuffix: ' — Akhi Car Rental Admin' },
+    meta: { titleSuffix: ' — New Akhi Rent-a-Car Admin' },
   },
   collections: [Cars, Services, Facilities, Testimonials, Inquiries, Media, Users],
   globals: [Home, SiteSettings],
@@ -44,13 +48,16 @@ export default buildConfig({
     defaultLocale: 'en',
     fallback: true,
   },
-  editor: lexicalEditor(),
-  secret: process.env.PAYLOAD_SECRET || 'dev-only-secret-change-me',
+  secret: secret || 'local-development-only-secret',
+  graphQL: { disable: true },
+  upload: { limits: { fileSize: 8 * 1024 * 1024 } },
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
   db: vercelPostgresAdapter({
     pool: { connectionString: hasDb ? dbUrl : '' },
-    // Only push schema when a valid database connection string is provided
-    push: hasDb && (process.env.NODE_ENV !== 'production' || process.env.PAYLOAD_PUSH === 'true'),
+    // Payload only ever pushes the schema outside production. Production databases
+    // are set up with migrations (`npm run db:migrate`).
+    push: hasDb && process.env.PAYLOAD_PUSH !== 'false',
+    migrationDir: path.resolve(dirname, 'migrations'),
   }),
   plugins: [
     vercelBlobStorage({
